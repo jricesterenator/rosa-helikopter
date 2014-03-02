@@ -41,3 +41,6 @@ class MockARDrone:
 
     def set_speed(self, speed):
         pass
+
+    def halt(self):
+        pass

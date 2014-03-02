@@ -5,20 +5,27 @@ import threading
 def log(text):
     sys.stderr.write(text)
 
-class Writer:
-    def __init__(self, ser, reader):
+class CANBus:
+    def __init__(self, ser, reader=None):
         self.serial = ser
-        self.reader = reader
         self.commandActive = False
+
+        if reader:
+            self.reader = reader
+        else:
+            self.reader = ReaderThread(self.serial)
+            self.reader.start()
 
     def sendAsyncCommand(self, command, callback):
         self.commandActive = True
         self._sendCommand(command, callback)
 
     def stopAsyncCommand(self):
-        self._write("\r\n")
-        self.reader.waitForCommand()
-        self.commandActive = False
+        if self.commandActive:
+            print "Stopping active command"
+            self._write("\r\n")
+            self.reader.waitForCommand()
+            self.commandActive = False
 
     def sendCommand(self, command):
         allentries = []
@@ -44,9 +51,54 @@ class Writer:
         self.serial.write(text)
         
     def destroy(self):
-        if self.commandActive:
-            print "Stopping active command"
-            self.stopAsyncCommand()
+        self.stopAsyncCommand()
+        self.reader.destroy()
+
+class DummyCANBus:
+    def __init__(self, ser, reader):
+        pass
+
+    def sendAsyncCommand(self, command, callback):
+        pass
+
+    def stopAsyncCommand(self):
+        pass
+
+    def sendCommand(self, command):
+        pass
+
+    def destroy(self):
+        pass
+
+class CANBusMonitor:
+    def __init__(self, can):
+        self.can = can
+
+    def setup(self):
+        self.can.sendCommand('atl1') #\r\n line endings
+        self.can.sendCommand('ati')
+        self.can.sendCommand('ath1') #headers on
+        self.can.sendCommand('ats1') #include spaces
+        self.can.sendCommand('atal') #allow long messages
+        self.can.sendCommand('atsp6') #set to protocol 6, (CAN 11bit ID, 500kbaud)
+
+    def startCANMonitor(self, senderIds, messageCallback):
+        #Clear filters
+        self.can.sendCommand('stfcp') #clear pass filters
+        self.can.sendCommand('stfcb') #clear blocking filters
+        self.can.sendCommand('stfcfc') #clear flow control filters
+
+        #Add filters
+        for id in senderIds:
+            self.can.sendCommand('stfap %s,fff' % hex(id)[2:])
+
+        self.can.sendAsyncCommand('stm', messageCallback)
+
+    def stopCANMonitor(self):
+        self.can.stopAsyncCommand()
+
+    def destroy(self):
+        self.can.destroy()
 
 class ReaderThread(threading.Thread):
     def __init__(self, ser):
@@ -65,6 +117,12 @@ class ReaderThread(threading.Thread):
 
     def kill(self):
         self.running = False
+
+    def destroy(self):
+        print "Killing reader thread and waiting for it to die."
+        self.kill()
+        self.join()
+        print "Dead."
 
     def _handleData(self, entries):
         if not entries:
@@ -93,6 +151,7 @@ class ReaderThread(threading.Thread):
                     buffer = entries[-1]
 
             time.sleep(.001)
+
 
 class _AsyncCommand:
     def __init__(self):

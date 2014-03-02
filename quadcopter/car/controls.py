@@ -1,191 +1,162 @@
 import sys
 
-def parseMessageString(m):
-    sender = int(m[:3], 16)
-    hexmsg = int(m.replace(' ', '')[3:19], 16)
+def parseCANValue(hexMsg, byteIndex, mask):
+    shiftedMsg = hexMsg >> (8 * (byteIndex-1))
+    return shiftedMsg & mask
 
-    return sender, hexmsg
-
-
-#JRTODO: Work off a queue instead of calling processMessages
-class ControlProcessor:
-
-    def __init__(self, controls):
-        self.controls = controls
-
-    def processMessage(self, m):
-        self.processMessages([m])
-
-    def processMessages(self, msgs):
-        for m in msgs:
-            try:
-                sender, hexmsg = parseMessageString(m)
-
-            except ValueError:
-                print "[WARNING]", m, "is not a CAN message."
-                continue
-
-            except TypeError:
-                print "[WARNING]", m, "is not a CAN message."
-                continue
-
-            self._processMessage(sender, hexmsg)
-
-    def _processMessage(self, sender, hexmsg):
-
-        for control in self.controls.getControls():
-
-            if control.matches(sender):
-                value = control.parseValue(hexmsg)
-                control.onControlChange(value)
-
-
-class Control:
-
-    def __init__(self, controlDef, listeners=None):
-        self.controlDef = controlDef
-        self.name = controlDef.name
-
-        self.prevValue = None
+class ValueTracker:
+    def __init__(self):
         self.value = None
+        self.prev = None
 
-        if listeners:
-            self.listeners = listeners
+    def _isNewValue(self, newValue):
+        return self.value != newValue
+
+    def _isSameValue(self, newValue):
+        return self.value == newValue
+
+    def setNewValue(self, newValue):
+        if self._isNewValue(newValue):
+            self.prev = self.value
+            self.value = newValue
+            return True
         else:
-            self.listeners = []
+            return False
 
-    def onControlChange(self, newValue):
+class BaseControl:
+    def __init__(self, name):
+        self.name = name
+        self.listeners = []
 
-        #Value not changed?
-        if self.value == newValue:
-            return
+        self.value = ValueTracker()
 
-        #Set the new value
-        self.prevValue = self.value
-        self.value = newValue
+    def registerListener(self, listener):
+        self.listeners.append(listener)
 
-        self.printChangeInfo(self.prevValue, newValue)
+    def notifyListeners(self):
+        for l in self.listeners:
+            l(self)
 
-        #Notify listeners
-        for listener in self.listeners:
-            listener(self)
+    def setNewValue(self, newValue):
+        return self.value.setNewValue(newValue)
 
-    def getPrintableValue(self, value):
+    def getValue(self):
+        return self.value.value
+
+
+"""
+This class should let us create, use, notify, car controls
+without having to know CAN messages.
+"""
+class GenericControl(BaseControl):
+    def __init__(self, name):
+        BaseControl.__init__(self, name)
+
+"""This class processes CAN messages and notifies listeners"""
+class CANControl(BaseControl):
+    def __init__(self, name, sender, byteIndex, mask, cvmap=None, cvfunc=None):
+        BaseControl.__init__(self, name)
+
+        self.can = ValueTracker()
+
+        self.sender = sender
+        self.byteIndex = byteIndex
+        self.mask = mask
+
+        if cvmap:
+            self.correctionFx = self._CorrectedValueMap(cvmap).correctValue
+        elif cvfunc:
+            self.correctionFx = cvfunc
+        else:
+            raise ValueError("Either a corrected value map or function is required.")
+
+    def processCANMessage(self, sender, hexmsg):
+        if self._senderMatches(sender):
+            canValue = self._parseCANValue(hexmsg)
+
+            #JRTODO: If I need to sync the value changes between CAN and real,
+            #JRTODO: only set the CAN value after processing the real value.
+            #JRTODO: However, I don't think it will be a problem.
+
+            #If CAN value changed, update the corrected value
+            if self.can.setNewValue(canValue):
+
+                #Print updated CAN value info
+                self._printChangeInfo(self.can.prev, canValue)
+
+                #Update converted value
+                convertedValue = self._getCorrectedValue(canValue)
+                if self.setNewValue(convertedValue):
+
+                    #Notify
+                    self.notifyListeners()
+
+    def _senderMatches(self, sender):
+        return sender == self.sender
+
+    def _getCorrectedValue(self, value):
+        if value == None:
+            return None
+
+        try:
+            return self.correctionFx(value)
+
+        except ValueError:
+            msg = "[WARNING] Unsure of value for %s: %s" %\
+                  (self.name, self._getPrintableCANValue(value))
+            print msg
+            return None
+
+    def _parseCANValue(self, hexmsg):
+        return parseCANValue(hexmsg, self.byteIndex, self.mask)
+
+    def _printChangeInfo(self, prevValue, newValue):
+
+        prevCorrected = self._getCorrectedValue(prevValue)
+        newCorrected = self._getCorrectedValue(newValue)
+
+        print "[INFO] %s changed from %s to %s (%s --> %s): %s" %\
+              (self.name,
+               self._getPrintableCANValue(prevValue),
+               self._getPrintableCANValue(newValue),
+               prevCorrected,
+               newCorrected,
+               newCorrected)
+
+    def _getPrintableCANValue(self, value):
         string = "NOT_SET"
         if value != None:
             string = hex(value)
         return string
 
-    def matches(self, sender):
-        return sender == self.controlDef.sender
+    class _CorrectedValueMap:
+        def __init__(self, m):
+            self.map = m
 
-    def parseValue(self, hexMsg):
-        offsetBytes = self.controlDef.byteIndex-1
-        offsetBits = 8 * offsetBytes
-        shiftedMsg = hexMsg >> offsetBits
-        value = shiftedMsg & self.controlDef.mask
-        return value
-
-    def getCurrCorrectedValue(self):
-        return self.getCorrectedValue(self.value)
-
-    def getCorrectedValue(self, value):
-        if value == None:
-            return None
-
-        try:
-            return self.controlDef.correctionFx(value)
-
-        except ValueError:
-            msg = "[WARNING] Unsure of value for %s: %s" %\
-                  (self.name, self.getPrintableValue(value))
-            print msg
-            return None
-
-    def printChangeInfo(self, prevValue, newValue):
-
-        prevCorrected = self.getCorrectedValue(prevValue)
-        newCorrected = self.getCorrectedValue(newValue)
-
-        print "[INFO] %s changed from %s to %s (%s --> %s): %s" %\
-              (self.name,
-               self.getPrintableValue(prevValue),
-               self.getPrintableValue(newValue),
-               prevCorrected,
-               newCorrected,
-               newCorrected)
+        def correctValue(self, value):
+            if value in self.map:
+                return self.map[value]
+            else:
+                raise ValueError()
 
 
-class ControlDef:
-    def __init__(self, name, sender, byteIndex, mask, cvmap=None, cvfunc=None):
-        self.name = name
-        self.sender = sender
-        self.byteIndex = byteIndex
-        self.mask = mask
-
-        if cvmap != None:
-            self.correctionFx = _CorrectedValueMap(cvmap).correctValue
-        elif cvfunc != None:
-            self.correctionFx = cvfunc
-        else:
-            raise ValueError("Either a corrected value map or function is required.")
-
-
-
-class Controls:
-
-    def __init__(self):
-        self.controlMap = {}
-        for k,cdef in CONTROL_DEFS.items():
-            self.controlMap[k] = Control(cdef)
-
-    def activeSenders(self):
-        ids = set()
-        for v in self.controlMap.values():
-            if v.listeners:
-                ids.add(v.controlDef.sender)
-        return ids
-
-    def addListener(self, controlDef, listener):
-        self.controlMap[controlDef].listeners.append(listener)
-
-    def getControls(self):
-        return self.controlMap.values()
-
-    def when(self, *args):
-        return _When(self, *args)
+def when(self, *args):
+    return _When(self, *args)
 
 class _When:
-    def __init__(self, controls, controlDef, cmpFx):
-        self.controls = controls
-        self.controlDef = controlDef
+    def __init__(self, control, cmpFx):
+        self.control = control
         self.cmpFx = cmpFx
         self.callback = None
 
     def then(self, callback):
         self.callback = callback
-        listener = _ControlListener(self.cmpFx, self.callback).onControlChange
-        self.controls.addListener(self.controlDef, listener)
+        self.control.registerListener(self._onThen)
 
-class _ControlListener:
-    def __init__(self, cmpFx, callback):
-        self.cmpFx = cmpFx
-        self.callback = callback
-
-    def onControlChange(self, control):
-        correctedValue = control.getCurrCorrectedValue()
+    def _onThen(self, control):
+        correctedValue = control.getValue()
         if self.cmpFx(correctedValue):
             self.callback(correctedValue)
-
-class _CorrectedValueMap:
-    def __init__(self, m):
-        self.map = m
-
-    def correctValue(self, value):
-        if value in self.map:
-            return self.map[value]
-        else:
-            raise ValueError()
 
 def eq(value):
     return lambda x : value == x
@@ -196,22 +167,3 @@ def any():
 def echo(name):
     return lambda x : sys.stderr.write(name + ": " + str(x) + "\n")
 
-def steering1(value):
-    if value > 60000: #JRTODO: more official way to come up with this number?
-        offcenter = value - 65536
-    else:
-        offcenter = value
-    deg = offcenter/10 #convert 10ths of a degree to degree
-    return deg
-        
-
-""" Name, Sender, Byte #, Mask """
-CONTROL_DEFS = {
-    'reverse'  : ControlDef("Reverse",     sender=0x39E, byteIndex=5, mask=0xF0, cvmap={0x00:0, 0x10:1}),
-    'handbrake': ControlDef("Handbrake",   sender=0x39E, byteIndex=6, mask=0xF0, cvmap={0x00:0, 0x20:1}),
-    'neutral'  : ControlDef("In Neutral",  sender=0x228, byteIndex=7, mask=0x0F, cvmap={0x00:1, 0x04:0}),
-    'ingear'   : ControlDef("In Gear",     sender=0x228, byteIndex=7, mask=0x0F, cvmap={0x00:0, 0x04:1}),
-    'brake'    : ControlDef("Brake",       sender=0x190, byteIndex=6, mask=0xF0, cvmap={0x40:1, 0x00:0}),
-    'clutch'   : ControlDef("Clutch",      sender=0x050, byteIndex=5, mask=0x0F, cvmap={0x00:0, 0x01:0, 0x02:1}),
-    'steering1': ControlDef("Steering1",   sender=0x082, byteIndex=5, mask=0xFFFF, cvfunc=steering1)
-}

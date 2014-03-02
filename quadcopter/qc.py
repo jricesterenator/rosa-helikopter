@@ -1,14 +1,13 @@
 import time
-import sys
 import atexit
 
 import serial
 from serial.tools import list_ports
 
+from quadcopter.car.canbus import *
+from car.car import *
 from ardrone import libardrone, mockardrone
-import drone
-from car.controls import *
-from car import canbus
+from quadcopter.controls.mazda3_2010 import *
 
 #DEV = '/dev/tty.OBDLinkMX-STN-SPP'
 #BAUD = 500000
@@ -16,54 +15,108 @@ from car import canbus
 DEV = '/tmp/fake2'
 BAUD = 9600
 MOCK_DRONE = True
+CONTROLS = MAZDA_3_2010_CONTROLS
 
-class CAN:
-    def __init__(self, writer, canProcessor):
-        self.writer = writer
-        self.canProcessor = canProcessor
+class CarThatControlsDrone:
+    def __init__(self, car, drone):
+        self.car = car
+        self.drone = drone
+        controls = self.car.controlMap
 
-    def setup(self):
-        self.writer.sendCommand('atl1') #\r\n line endings
-        self.writer.sendCommand('ati')
-        self.writer.sendCommand('ath1') #headers on
-        self.writer.sendCommand('ats1') #include spaces
-        self.writer.sendCommand('atal') #allow long messages
-        self.writer.sendCommand('atsp6') #set to protocol 6, (CAN 11bit ID, 500kbaud)
+        when(controls['handbrake'], eq(1)).then(drone.takeoff)
+        when(controls['handbrake'], eq(0)).then(drone.land)
 
-    def startMonitor(self, senderIds):
-        #Clear filters
-        self.writer.sendCommand('stfcp') #clear pass filters
-        self.writer.sendCommand('stfcb') #clear blocking filters
-        self.writer.sendCommand('stfcfc') #clear flow control filters
+        when(controls['neutral'], any()).then(echo("Neutral"))
+        when(controls['ingear'], any()).then(echo("In Gear"))
+        when(controls['brake'], any()).then(echo("Brake"))
 
-        #Add filters
-        for id in senderIds:
-            self.writer.sendCommand('stfap %s,fff' % hex(id)[2:])
+        when(controls['steering1'], any()).then(drone.roll)
 
-        self.writer.sendAsyncCommand('stm', self.canProcessor.processMessage)
+    def getSenders(self):
+        return self.car.getSenders()
+
+    def getControls(self):
+        return self.car.getControls()
+
+    def processMessage(self, m):
+        self.car.processMessage(m)
+
+
+class DroneControlledByCar:
+    def __init__(self, drone):
+        self.drone = drone
+
+    def reset(self, value=None):
+        self.drone.reset()
+
+    def trim(self, value=None):
+        self.drone.trim()
+
+    def takeoff(self, value=None):
+        print "Take Off!"
+        self.drone.takeoff()
+
+    def land(self, value=None):
+        print "Land!"
+        self.drone.land()
+
+    def halt(self, value=None):
+        self.drone.halt()
+
+    """Values are -530 degrees to +530 degrees"""
+    def roll(self, value):
+        maxval = 45
+        if value > maxval:
+            value = maxval
+        elif value < -maxval:
+            value = -maxval
+
+
+        #Within this window, call it TDC. Hover the drone.
+        if -2 <= value <= 2:
+            print "Hovering"
+            self.drone.hover()
+            return
+        else:
+            speed = abs(value/float(maxval))
+            print "New speed (%s deg): %s" % (value, speed)
+
+            self.drone.set_speed(speed)
+            if value < 0:
+                print "Moving left"
+                self.drone.move_left()
+            else:
+                print "Moving right"
+                self.drone.move_right()
 
 
 class App:
-    def __init__(self, drone, controls):
-        self.drone = drone
-        self.controls = controls
+    def __init__(self):
+        self.drone = None
+        self.quadCar = None
+        self.serial = None
+        self.canMonitor = None
+        atexit.register(self._shutdownHook)
 
-    def connectToCar(self, dev, baud):
+    def _shutdownHook(self):
+        print "SHUTDOWN!"
+        self.destroy()
+
+    def start(self, droneClass):
+        self._connectToDrone(droneClass)
+        self._connectToCar(DEV, BAUD)
+
+    def _connectToDrone(self, droneClass):
+        self.drone = DroneControlledByCar(droneClass())
+        print "Connected to drone."
+
+    def _connectToCar(self, dev, baud):
+        self.quadCar = CarThatControlsDrone(CANCar(CONTROLS), self.drone)
+
         self.serial = serial.Serial(dev, baud)
-
-        self.readerThread = canbus.ReaderThread(self.serial)
-        self.readerThread.start()
-
-        self.writer = canbus.Writer(self.serial, self.readerThread)
-
-        self.canProcessor = ControlProcessor(self.controls)
-
-        self.can = CAN(self.writer, self.canProcessor)
-        self.can.setup()
-
-    def startCarMonitor(self):
-        senderIds = self.controls.activeSenders()
-        self.can.startMonitor(senderIds)
+        self.canMonitor = CANBusMonitor(CANBus(self.serial))
+        self.canMonitor.setup()
+        self.canMonitor.startCANMonitor(self.quadCar.getSenders(), self.quadCar.processMessage)
 
     def listSerialPorts(self):
         ports = [p[0] for p in list_ports.comports()]
@@ -73,56 +126,33 @@ class App:
             print "  " + p
 
     def destroy(self):
-        self.writer.destroy()
+        if self.drone:
+            self.drone.halt()
 
-        print "Waiting for reader thread to die.."
-        self.readerThread.kill()
-        self.readerThread.join()
-        print "Dead"
+        if self.canMonitor:
+            self.canMonitor.destroy()
 
-        self.serial.close()
-        print "Serial connection closed"
-
-
-def loadControls(drone):
-    def when(*args):
-        return c.when(*args)
-
-    c = Controls()
-
-    when('handbrake', eq(1)).then(drone.takeoff)
-    when('handbrake', eq(0)).then(drone.land)
-
-    when('neutral', any()).then(echo("Neutral"))
-    when('ingear', any()).then(echo("In Gear"))
-    when('brake', any()).then(echo("Brake"))
-
-    return c
+        if self.serial:
+            self.serial.close()
+            print "Serial connection closed"
 
 
 if __name__ == '__main__':
-    app = None
-
-    def shutdownHook():
-        print "SHUTDOWN!"
-        if app:
-            app.destroy()
-    atexit.register(shutdownHook)
 
     if MOCK_DRONE:
-        d = drone.Drone(mockardrone.MockARDrone())
+        d = mockardrone.MockARDrone
     else:
-        d = drone.Drone(libardrone.ARDrone())
+        d = libardrone.ARDrone
 
-
-    app = App(d, loadControls(d))
+    app = App()
     app.listSerialPorts()
+    app.start(d)
 
-    app.connectToCar(DEV, BAUD)
-    app.startCarMonitor()
+    raw_input("Press ENTER to force land and quit.")
+    app.drone.land()
+    app.drone.halt()
 
-    while True:
-        time.sleep(.001)
+    app.destroy()
 
 
 
