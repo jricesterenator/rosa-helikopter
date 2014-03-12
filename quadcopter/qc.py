@@ -2,159 +2,274 @@ import time
 import atexit
 
 import serial
-from serial.tools import list_ports
 
-from quadcopter.car.canbus import *
+from state_control import DroneStateControl, Not
+from car.canbus import *
 from car.car import *
 from ardrone import libardrone, mockardrone
-from quadcopter.controls.mazda3_2010 import *
+from controls.mazda3_2010 import *
 
-#DEV = '/dev/tty.OBDLinkMX-STN-SPP'
-#BAUD = 500000
+class Inputs:
+    def __init__(self, controls, inputs):
+        self.controls = controls
+        self.inputs = inputs
 
-DEV = '/tmp/fake2'
-BAUD = 9600
-MOCK_DRONE = True
-CONTROLS = MAZDA_3_2010_CONTROLS
+    def c(self, name):
+        val = self.controls[name].value.value
+        if val is None:
+            return 0
+        return val
 
-class CarThatControlsDrone:
-    def __init__(self, car, drone):
-        self.car = car
-        self.drone = drone
-        controls = self.car.controlMap
+class MyInputs(Inputs):
 
-        when(controls['handbrake'], eq(1)).then(drone.takeoff)
-        when(controls['handbrake'], eq(0)).then(drone.land)
+    def __init__(self, controls):
+        Inputs.__init__(self, controls, self.load_inputs())
 
-        when(controls['neutral'], any()).then(echo("Neutral"))
-        when(controls['ingear'], any()).then(echo("In Gear"))
-        when(controls['brake'], any()).then(echo("Brake"))
+    def load_inputs(self):
+        c = self.c #Convenience
 
-        when(controls['steering1'], any()).then(drone.roll)
+        return {
+            'emergency_button' : lambda : c('hazards'),
 
-    def getSenders(self):
-        return self.car.getSenders()
+            'takeoff' : lambda : Not(c('handbrake')) and c('seatbelt'),
+            'land' : lambda : c('handbrake'),
+            'hover' : lambda : Not(c('seatbelt')),
 
-    def getControls(self):
-        return self.car.getControls()
+            'strafe_active' : lambda : c('highbeams'), #If you have dedicated analog for this, set to True
+            'strafe_speed' : lambda : abs(c('steering1')),
+            'strafe_left' : lambda : c('steering1') < 0,
+            'strafe_right' : lambda : c('steering1') >= 0,
 
-    def processMessage(self, m):
-        self.car.processMessage(m)
+            'rotate_active' : lambda : Not(c('highbeams')),
+            'rotate_speed' : lambda : abs(c('steering1')),
+            'rotate_left' : lambda : c('steering1') < 0,
+            'rotate_right' : lambda  : c('steering1') >= 0,
 
+            'straight_motion_active' : lambda : Not(c('neutral')),
+            'straight_speed' : lambda : c('gas1'),
+            'forward' : lambda : c('ingear'),#JRTODO: does INGEAR set when reverse active?
+            'reverse' : lambda : c('reverse'),
 
-class DroneControlledByCar:
-    def __init__(self, drone):
-        self.drone = drone
+            'vertical_motion_active' : lambda : c('neutral'),
+            'vertical_speed' : lambda : self.vertical_speed(),
+            'up' : lambda : not(c('brake') or c('left_blinker')), #not down
+            'down' : lambda : c('brake') or c('left_blinker'),
 
-    def reset(self, value=None):
-        self.drone.reset()
+            }
 
-    def trim(self, value=None):
-        self.drone.trim()
+    def vertical_speed(self):
+        c = self.c #convenience
 
-    def takeoff(self, value=None):
-        print "Take Off!"
-        self.drone.takeoff()
-
-    def land(self, value=None):
-        print "Land!"
-        self.drone.land()
-
-    def halt(self, value=None):
-        self.drone.halt()
-
-    """Values are -530 degrees to +530 degrees"""
-    def roll(self, value):
-        maxval = 45
-        if value > maxval:
-            value = maxval
-        elif value < -maxval:
-            value = -maxval
-
-
-        #Within this window, call it TDC. Hover the drone.
-        if -2 <= value <= 2:
-            print "Hovering"
-            self.drone.hover()
-            return
-        else:
-            speed = abs(value/float(maxval))
-            print "New speed (%s deg): %s" % (value, speed)
-
-            self.drone.set_speed(speed)
-            if value < 0:
-                print "Moving left"
-                self.drone.move_left()
+        if self.inputs['up']():
+            if c('right_blinker'):
+                return .2
             else:
-                print "Moving right"
-                self.drone.move_right()
+                return c('gas1')
+
+        elif self.inputs['down']():
+            if c('left_blinker'):
+                return .2
+            else:
+                return c('gas1')
+
+
 
 
 class App:
     def __init__(self):
         self.drone = None
-        self.quadCar = None
-        self.serial = None
+        self.car = None
         self.canMonitor = None
-        atexit.register(self._shutdownHook)
 
-    def _shutdownHook(self):
-        print "SHUTDOWN!"
-        self.destroy()
+    def start(self):
+        self.drone = DRONE()
+        print "[DEBUG] Connected to Drone"
 
-    def start(self, droneClass):
-        self._connectToDrone(droneClass)
-        self._connectToCar(DEV, BAUD)
+        car = CAR_CONNECTION.connectToCar(CAR)
+        print "[DEBUG] Connected to Car"
 
-    def _connectToDrone(self, droneClass):
-        self.drone = DroneControlledByCar(droneClass())
-        print "Connected to drone."
+        self.cs = DroneStateControl(INPUTS, self.drone)
 
-    def _connectToCar(self, dev, baud):
-        self.quadCar = CarThatControlsDrone(CANCar(CONTROLS), self.drone)
+        #Register all car controls with the listener.
+        for control in car.getControlsList():
+            control.registerListener(self.cs.received_input)
 
-        self.serial = serial.Serial(dev, baud)
-        self.canMonitor = CANBusMonitor(CANBus(self.serial))
-        self.canMonitor.setup()
-        self.canMonitor.startCANMonitor(self.quadCar.getSenders(), self.quadCar.processMessage)
-
-    def listSerialPorts(self):
-        ports = [p[0] for p in list_ports.comports()]
-
-        print "Available serial ports:"
-        for p in ports:
-            print "  " + p
 
     def destroy(self):
+        print "SHUTDOWN!"
         if self.drone:
             self.drone.halt()
 
         if self.canMonitor:
             self.canMonitor.destroy()
 
-        if self.serial:
-            self.serial.close()
-            print "Serial connection closed"
+        CAR_CONNECTION.destroy()
+
+
+
 
 
 if __name__ == '__main__':
 
-    if MOCK_DRONE:
-        d = mockardrone.MockARDrone
-    else:
-        d = libardrone.ARDrone
+
+    ##########################################################################
+    ##########################################################################
+    global DEBUG_ALL_CONTROLS
+    DEBUG_ALL_CONTROLS=True
+
+
+##CAN Real setup - Real drone
+#    DEV = '/dev/tty.OBDLinkMX-STN-SPP'
+#    BAUD = 500000
+#
+#    CAR_CONNECTION = CarConnectors.CANSerialConnection(serial.Serial(DEV, BAUD))
+#    CAR = Cars.CANCar(MAZDA_3_2010_CONTROLS)
+#    INPUTS = MyInputs(CAR.controls)
+#    DRONE = mockardrone.MockARDrone
+
+##CAN mock setup - Mock drone
+#    DEV = '/tmp/fake2'
+#    BAUD = 9600
+#
+#    CAR_CONNECTION = CarConnectors.CANSerialConnection(serial.Serial(DEV, BAUD), debugAllControls=True)
+#    CAR = Cars.CANCar(MAZDA_3_2010_CONTROLS)
+#    INPUTS = MyInputs(CAR.controls)
+#    DRONE = mockardrone.MockARDrone
+
+#CAN Mock - REAL DRONE
+#    CAR_CONNECTION = CarConnectors.CANSerialConnection(serial.Serial(DEV, BAUD))
+#    CAR = Cars.CANCar(MAZDA_3_2010_CONTROLS)
+#    INPUTS = MyInputs(CAR.controls)
+#    DRONE = libardrone.ARDrone
+
+
+#Test Setup - In-memory CAN testing
+    CAR_CONNECTION = CarConnectors.BasicConnection()
+    CAR = Cars.CANCar(MAZDA_3_2010_CONTROLS)
+    INPUTS = MyInputs(CAR.controls)
+    DRONE = mockardrone.MockARDrone
+
+
+
+    #Test Setup - Fake car, fake drone
+#    CAR_CONNECTION = CarConnectors.BasicConnection()
+#    CAR = Cars.SimpleCar(MAZDA_3_2010_GENERIC_CONTROLS)
+#    INPUTS = MyInputs(CAR.controls)
+    ##########################################################################
+    ##########################################################################
 
     app = App()
-    app.listSerialPorts()
-    app.start(d)
+    atexit.register(app.destroy)
 
-    raw_input("Press ENTER to force land and quit.")
-    app.drone.land()
+    app.start()
+    print "----------------------"
+
+
+    CAR.processMessage("999 00 00 00 00 00 00 00 01") #seatbelt
+#    CAR.processMessage("998 00 00 00 00 00 00 00 01") #hazards
+    app.cs.tick()
+
+    CAR.processMessage("39E 00 00 20 00 00 00 00 00") #handbrake active
+    app.cs.tick()
+
+    CAR.processMessage("39E 00 00 00 00 00 00 00 00") #handbrake OFF
+    app.cs.tick()
+
+    #Take off
+
+
+#    #Take off
+#    CAR.processMessage("seatbelt,1")
+#    CAR.processMessage("handbrake,0")
+#    app.cs.tick()
+#
+#    CAR.processMessage("neutral,1"); CAR.processMessage("ingear,0")
+#    app.cs.tick()
+#
+#    CAR.processMessage("gas1,1")#should move up at 1
+#    app.cs.tick()
+#
+#    CAR.processMessage("neutral,0")
+#    CAR.processMessage("ingear,1")#out of vertical mode
+#    app.cs.tick()
+#
+#    CAR.processMessage("gas1,.5")#should move fwd at .5
+#    app.cs.tick()
+#
+#    CAR.processMessage("steering1,-.5")#should move fwd at .5
+#    app.cs.tick()
+#    CAR.processMessage("steering1,.5")#should move fwd at .5
+#    app.cs.tick()
+
+
+
+#    raw_input("Press ENTER to force land and quit.")
+#    app.drone.land()
     app.drone.halt()
 
-    app.destroy()
 
 
 
+
+#class DroneControlledByCar:
+
+#    def __init__(self, drone):
+#        self.drone = drone
+#        self.hovering = True
+#
+#    def reset(self, value=None, prev=None):
+#        self.drone.reset()
+#
+#    def trim(self, value=None, prev=None):
+#        self.drone.trim()
+#
+#    def takeoff(self, value=None, prev=None):
+#        if value != None and prev == None:#dont do anything on initial state set
+#            return
+#
+#        print "Take Off!"
+#        self.drone.takeoff()
+#
+#    def land(self, value=None, prev=None):
+#        if value != None and prev == None:#dont do anything on initial state set
+#            return
+#        print "Land!"
+#        self.drone.land()
+#
+#    def emergency_stop(self):
+#        print "EMERGENCY STOP!"
+#        self.drone.reset()
+#
+#    def halt(self, value=None, prev=None):
+#        self.drone.halt()
+#
+#    """Values are -530 degrees to +530 degrees"""
+#    def roll(self, value, prev=None):
+#        maxval = 45
+#        if value > maxval:
+#            value = maxval
+#        elif value < -maxval:
+#            value = -maxval
+#
+#
+#        #Within this window, call it TDC. Hover the drone.
+#        if -6 <= value <= 6:
+#            if not self.hovering:
+#                print "Hovering"
+#                self.hovering = True
+#                self.drone.hover()
+#            return
+#        else:
+#            self.hovering = False
+#            speed = abs(value/float(maxval))
+#            print "New speed (%s deg): %s" % (value, speed)
+#
+#            self.drone.set_speed(speed)
+#            if value < 0:
+#                print "Moving left"
+#                self.drone.move_left()
+#            else:
+#                print "Moving right"
+#                self.drone.move_right()
 
 

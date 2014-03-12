@@ -1,46 +1,50 @@
 class MockARDrone:
 
+    def __init__(self):
+        self.speed = .2
+
     def takeoff(self):
-        pass
+        print "takeoff"
 
     def land(self):
-        pass
+        print "land"
 
     def hover(self):
-        pass
+        print "hover"
 
     def move_left(self):
-        pass
+        print "move left at", self.speed
 
     def move_right(self):
-        pass
+        print "move right at", self.speed
 
     def move_up(self):
-        pass
+        print "move up at", self.speed
 
     def move_down(self):
-        pass
+        print "move down at", self.speed
 
     def move_forward(self):
-        pass
+        print "move forward at", self.speed
 
     def move_backward(self):
-        pass
+        print "move backward at", self.speed
 
     def turn_left(self):
-        pass
+        print "rotate left at", self.speed
 
     def turn_right(self):
-        pass
+        print "rotate right at", self.speed
 
     def reset(self):
-        pass
+        print "reset"
 
     def trim(self):
         pass
 
     def set_speed(self, speed):
-        pass
+        self.speed = speed
+#        print "set speed to", speed
 
     def halt(self):
-        pass
+        print "halt communication"
