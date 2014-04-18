@@ -52,18 +52,18 @@ MAZDA_3_2010_CONTROLS = {
     'gas1': ControlDefs.CANControlDef('Gas', sender=0x201, byteIndex=2, mask=0xFF, cvfunc=gas1),
 }
 
-MAZDA_3_2010_GENERIC_CONTROLS = {
-    'reverse'   : ControlDefs.GenericControlDef('reverse'),
-    'handbrake' : ControlDefs.GenericControlDef('handbrake'),
-    'neutral'   : ControlDefs.GenericControlDef('neutral'),
-    'ingear'    : ControlDefs.GenericControlDef('ingear'),
-    'brake'     : ControlDefs.GenericControlDef('brake'),
-    'clutch'    : ControlDefs.GenericControlDef('clutch'),
-    'steering1' : ControlDefs.GenericControlDef('steering1'),
-    'hazards'   : ControlDefs.GenericControlDef('hazards'),
-    'seatbelt'  : ControlDefs.GenericControlDef('seatbelt'),
-    'highbeams' : ControlDefs.GenericControlDef('highbeams'),
-    'right_blinker'  : ControlDefs.GenericControlDef('right_blinker'),
-    'left_blinker'   : ControlDefs.GenericControlDef('left_blinker'),
-    'gas1'      : ControlDefs.GenericControlDef('gas1')
+MAZDA_3_2010_SIMPLE_CONTROLS = {
+    'reverse'   : ControlDefs.SimpleControlDef('reverse'),
+    'handbrake' : ControlDefs.SimpleControlDef('handbrake'),
+    'neutral'   : ControlDefs.SimpleControlDef('neutral'),
+    'ingear'    : ControlDefs.SimpleControlDef('ingear'),
+    'brake'     : ControlDefs.SimpleControlDef('brake'),
+    'clutch'    : ControlDefs.SimpleControlDef('clutch'),
+    'steering1' : ControlDefs.SimpleControlDef('steering1'),
+    'hazards'   : ControlDefs.SimpleControlDef('hazards'),
+    'seatbelt'  : ControlDefs.SimpleControlDef('seatbelt'),
+    'highbeams' : ControlDefs.SimpleControlDef('highbeams'),
+    'right_blinker'  : ControlDefs.SimpleControlDef('right_blinker'),
+    'left_blinker'   : ControlDefs.SimpleControlDef('left_blinker'),
+    'gas1'      : ControlDefs.SimpleControlDef('gas1')
 }

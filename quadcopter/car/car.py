@@ -14,11 +14,11 @@ def parseCANValue(hexMsg, byteIndex, mask):
 class Cars:
 
     class AbstractCar:
-        def __init__(self, controls):
-            self.controls = controls
+        def __init__(self, controlProcessors):
+            self.controlProcessors = controlProcessors
 
         def getControlsList(self):
-            return self.controls.values()
+            return self.controlProcessors.values()
 
         def processMessages(self, msgs):
             for m in msgs:
@@ -30,42 +30,41 @@ class Cars:
 
     class SimpleCar(AbstractCar):
         def __init__(self, controlList):
-            controls = {}
-            for key, control_def in controlList.items():
-                controls[key] = GenericValueHandler(control_def)
+            controlProcessors = {}
+            for key, controlDef in controlList.items():
+                controlProcessors[key] = SimpleMessageProcessor(controlDef)
 
-            Cars.AbstractCar.__init__(self, controls)
+            Cars.AbstractCar.__init__(self, controlProcessors)
 
         def processMessage(self, msg):
             key, value = msg.split(",")
 
-            if key not in self.controls:
+            if key not in self.controlProcessors:
                 print "[WARNING] Unknown message key:", key
                 return
 
-            control = self.controls[key]
-            if control.value.setNewValue(float(value)):
+            processor = self.controlProcessors[key]
+            if processor.value.setNewValue(float(value)):
                 print "   %s set to %s" % (key, value)
-                control.notifyListeners()
+                processor.notifyListeners()
 
-    #JRTODO: Work off a queue instead of calling processMessages?
     class CANCar(AbstractCar):
         def __init__(self, controlList):
             controls = {}
-            for key, control_def in controlList.items():
-                controls[key] = CANMessageProcessor(control_def)
+            for key, controlDef in controlList.items():
+                controls[key] = CANMessageProcessor(controlDef)
 
             Cars.AbstractCar.__init__(self, controls)
 
         def getSenders(self, debugAllControls=False):
             if debugAllControls:#follow all inputs, even if they don't have listeners
                 ids = set()
-                for control in self.controls.values():
-                    ids.add(control.control_def.sender)
+                for control in self.controlProcessors.values():
+                    ids.add(control.controlDef.sender)
                 return ids
             else:
                 ids = set()
-                for control in self.controls.values():
+                for control in self.controlProcessors.values():
                     if control.listeners:
                         ids.add(control.sender)
                 return ids
@@ -82,55 +81,49 @@ class Cars:
                 print "[WARNING]", m, "is not a CAN message."
                 return
 
-            for control in self.controls.values():
-                self._processCANMessage(control, sender, hexmsg)
+            for processor in self.controlProcessors.values():
+                self._processCANMessage(processor, sender, hexmsg)
 
         def _parseCANString(self, m):
             return parseCANString(m)
 
-        def _processCANMessage(self, control, sender, hexmsg):
-            control_def = control.control_def
-            if control_def.senderMatches(sender):
-                canValue = self._parseCANValue(hexmsg, control_def.byteIndex, control_def.mask)
+        def _processCANMessage(self, processor, sender, hexmsg):
+            controlDef = processor.controlDef
+            if controlDef.senderMatches(sender):
+                canValue = self._parseCANValue(hexmsg, controlDef.byteIndex, controlDef.mask)
 
                 #JRTODO: If I need to sync the value changes between CAN and real,
                 #JRTODO: only set the CAN value after processing the real value.
                 #JRTODO: However, I don't think it will be a problem.
 
                 #If CAN value changed, update the corrected value
-                if control.canValue.setNewValue(canValue):
+                if processor.canValue.setNewValue(canValue):
 
                     #Print updated CAN value info
-                    self._printChangeInfo(control_def, control.canValue.prev, canValue)
+                    self._printChangeInfo(controlDef, processor.canValue.prev, canValue)
 
-##JRTODO does this section belong in the can control object?
                     #Update converted value
-                    try:
-                        convertedValue = control_def.getCorrectedValue(canValue)
-                    except ValueError:
-                        print "[WARNING] Unhandled value for %s: %s" % (control_def.name, canValue)
-                        convertedValue = None
-
-                    if control.setNewValue(convertedValue):
-                        control.notifyListeners()
+                    convertedValue = controlDef.getCorrectedValue(canValue)
+                    if processor.setNewValue(convertedValue):
+                        processor.notifyListeners()
 
 
         def _parseCANValue(self, hexMsg, byteIndex, mask):
             return parseCANValue(hexMsg, byteIndex, mask)
 
-        def _printChangeInfo(self, control_def, prevValue, newValue):
+        def _printChangeInfo(self, controlDef, prevValue, newValue):
 
             def _getPrintableCANValue(value):
                 string = "NOT_SET"
                 if value != None:
-                    string = hex(value)
+                    string = "0x" + ("%x" % value).upper()
                 return string
 
-            prevCorrected = control_def.getCorrectedValue(prevValue)
-            newCorrected = control_def.getCorrectedValue(newValue)
+            prevCorrected = controlDef.getCorrectedValue(prevValue)
+            newCorrected = controlDef.getCorrectedValue(newValue)
 
             print "[INFO] %s changed from %s to %s (%s --> %s): %s" %\
-                  (control_def.name,
+                  (controlDef.name,
                    _getPrintableCANValue(prevValue),
                    _getPrintableCANValue(newValue),
                    prevCorrected,
@@ -140,7 +133,7 @@ class Cars:
 
 class CarConnectors:
 
-    class BasicConnection:
+    class SimpleConnection:
         def connectToCar(self, car):
             print "Connected to Car"
             return car
@@ -153,6 +146,8 @@ class CarConnectors:
         def __init__(self, serial, debugAllControls):
             self.serial = serial
             self.debugAllControls = debugAllControls
+
+            self.listSerialPorts()
 
         def connectToCar(self, can_car):
             self.canMonitor = Bus.CANBusMonitor(Bus.CANBus(self.serial))

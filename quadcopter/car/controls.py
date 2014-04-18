@@ -1,4 +1,3 @@
-import sys
 
 class ValueTracker:
     def __init__(self):
@@ -19,18 +18,18 @@ class ValueTracker:
         else:
             return False
 
-class AbstractValueHandler:
-    def __init__(self, control_def):
+class AbstractMessageProcessor:
+    def __init__(self, controlDef):
         self.listeners = []
         self.value = ValueTracker()
-        self.control_def = control_def
+        self.controlDef = controlDef
 
     def registerListener(self, listener):
         self.listeners.append(listener)
 
     def notifyListeners(self):
         for l in self.listeners:
-            l(self.control_def.name, self.value.value, self.value.prev)
+            l(self.controlDef.name, self.value.value, self.value.prev)
 
     def setNewValue(self, newValue):
         return self.value.setNewValue(newValue)
@@ -38,21 +37,19 @@ class AbstractValueHandler:
     def getValue(self):
         return self.value.value
 
-class GenericValueHandler(AbstractValueHandler):
-    def __init__(self, control_def):
-        AbstractValueHandler.__init__(self, control_def)
+class SimpleMessageProcessor(AbstractMessageProcessor):
+    def __init__(self, controlDef):
+        AbstractMessageProcessor.__init__(self, controlDef)
 
-class CANMessageProcessor(AbstractValueHandler):
+class CANMessageProcessor(AbstractMessageProcessor):
     def __init__(self, can_control):
-        AbstractValueHandler.__init__(self, can_control)
+        AbstractMessageProcessor.__init__(self, can_control)
 
         self.canValue = ValueTracker()
 
-
-
 class ControlDefs:
 
-    class GenericControlDef:
+    class SimpleControlDef:
         def __init__(self, name):
             self.name = name
 
@@ -81,7 +78,7 @@ class ControlDefs:
                 return self.correctionFx(value)
             except ValueError:
                 print "[WARNING] Unhandled value for %s: %s" % (self.name, value)
-#                raise ValueError("Unhandled value for %s: %s" % (self.name, value))
+                return None
 
         class _CorrectedValueMap:
             def __init__(self, name, m):

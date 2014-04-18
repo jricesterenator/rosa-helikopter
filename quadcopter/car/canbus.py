@@ -74,22 +74,6 @@ class Bus:
             self.stopAsyncCommand(True)
             self.reader.destroy()
 
-    class DummyCANBus:
-        def __init__(self, ser, reader):
-            pass
-
-        def sendAsyncCommand(self, command, callback):
-            pass
-
-        def stopAsyncCommand(self):
-            pass
-
-        def sendCommand(self, command):
-            pass
-
-        def destroy(self):
-            pass
-
     class CANBusMonitor:
         def __init__(self, can):
             self.can = can

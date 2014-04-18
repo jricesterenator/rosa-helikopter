@@ -158,7 +158,7 @@ if __name__ == '__main__':
 #    CAR_CONNECTION = CarConnectors.BasicConnection()
     CAR = Cars.CANCar(MAZDA_3_2010_CONTROLS)
 #    CAR = Cars.SimpleCar(MAZDA_3_2010_GENERIC_CONTROLS)
-    INPUTS = MyInputs(CAR.controls)
+    INPUTS = MyInputs(CAR.controlProcessors)
 #    DRONE = myardrone.MyARDrone
     DRONE = mockardrone.MockARDrone
 
@@ -230,76 +230,5 @@ if __name__ == '__main__':
 #    app.cs.tick()
 #    CAR.processMessage("steering1,.5")#should move fwd at .5
 #    app.cs.tick()
-
-
-
-#    raw_input("Press ENTER to force land and quit.")
-#    app.drone.land()
-#    app.drone.halt()
-
-
-
-
-
-#class DroneControlledByCar:
-
-#    def __init__(self, drone):
-#        self.drone = drone
-#        self.hovering = True
-#
-#    def reset(self, value=None, prev=None):
-#        self.drone.reset()
-#
-#    def trim(self, value=None, prev=None):
-#        self.drone.trim()
-#
-#    def takeoff(self, value=None, prev=None):
-#        if value != None and prev == None:#dont do anything on initial state set
-#            return
-#
-#        print "Take Off!"
-#        self.drone.takeoff()
-#
-#    def land(self, value=None, prev=None):
-#        if value != None and prev == None:#dont do anything on initial state set
-#            return
-#        print "Land!"
-#        self.drone.land()
-#
-#    def emergency_stop(self):
-#        print "EMERGENCY STOP!"
-#        self.drone.reset()
-#
-#    def halt(self, value=None, prev=None):
-#        self.drone.halt()
-#
-#    """Values are -530 degrees to +530 degrees"""
-#    def roll(self, value, prev=None):
-#        maxval = 45
-#        if value > maxval:
-#            value = maxval
-#        elif value < -maxval:
-#            value = -maxval
-#
-#
-#        #Within this window, call it TDC. Hover the drone.
-#        if -6 <= value <= 6:
-#            if not self.hovering:
-#                print "Hovering"
-#                self.hovering = True
-#                self.drone.hover()
-#            return
-#        else:
-#            self.hovering = False
-#            speed = abs(value/float(maxval))
-#            print "New speed (%s deg): %s" % (value, speed)
-#
-#            self.drone.set_speed(speed)
-#            if value < 0:
-#                print "Moving left"
-#                self.drone.move_left()
-#            else:
-#                print "Moving right"
-#                self.drone.move_right()
 
 
