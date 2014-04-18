@@ -11,24 +11,6 @@ def parseCANValue(hexMsg, byteIndex, mask):
     shiftedMsg = hexMsg >> (8 * (byteIndex-1))
     return shiftedMsg & mask
 
-class CANSerialConnection:
-    def __init__(self, serial, debugAllControls):
-        self.serial = serial
-        self.debugAllControls = debugAllControls
-
-
-    def connectToCar(self, can_car):
-        self.canMonitor = Bus.CANBusMonitor(Bus.CANBus(self.serial))
-        self.canMonitor.setup()
-        self.canMonitor.startCANMonitor(can_car.getSenders(self.debugAllControls), can_car.processMessage)
-        return can_car
-
-    def destroy(self):
-        self.canMonitor.destroy()
-        if self.serial:
-            self.serial.close()
-            print "Serial connection closed"
-
 class CANCar(AbstractCar):
     def __init__(self, controlList, connection):
         controls = {}
@@ -111,6 +93,29 @@ class CANCar(AbstractCar):
                newCorrected,
                newCorrected)
 
+class CANSerialConnection:
+    def __init__(self, serial, debugAllControls):
+        self.serial = serial
+        self.debugAllControls = debugAllControls
+
+
+    def connectToCar(self, can_car):
+        self.canMonitor = Bus.CANBusMonitor(Bus.CANBus(self.serial))
+        self.canMonitor.setup()
+        self.canMonitor.startCANMonitor(can_car.getSenders(self.debugAllControls), can_car.processMessage)
+        return can_car
+
+    def destroy(self):
+        self.canMonitor.destroy()
+        if self.serial:
+            self.serial.close()
+            print "Serial connection closed"
+
+
+class CANControlProcessor(AbstractControlProcessor):
+    def __init__(self, can_control):
+        AbstractControlProcessor.__init__(self, can_control)
+        self.canValue = ValueTracker()
 
 class CANControlDef:
     def __init__(self, name, sender, byteIndex, mask, cvmap=None, cvfunc=None):
@@ -148,9 +153,3 @@ class CANControlDef:
                 return self.map[value]
             else:
                 raise ValueError()
-
-
-class CANControlProcessor(AbstractControlProcessor):
-    def __init__(self, can_control):
-        AbstractControlProcessor.__init__(self, can_control)
-        self.canValue = ValueTracker()
