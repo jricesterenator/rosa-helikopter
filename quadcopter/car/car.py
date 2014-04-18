@@ -1,6 +1,4 @@
-from controls import *
 import thread
-
 
 class AbstractCar:
     def __init__(self, controlProcessors, connection):
@@ -28,13 +26,10 @@ class AbstractCar:
     def processMessage(self, m):
         raise NotImplementedError()
 
+
 class SimpleCar(AbstractCar):
     def __init__(self, controlList, connection):
-        controlProcessors = {}
-        for key, controlDef in controlList.items():
-            controlProcessors[key] = SimpleControlProcessor(controlDef)
-
-        AbstractCar.__init__(self, controlProcessors, connection)
+        AbstractCar.__init__(self, SimpleControlProcessor.wrap(controlList), connection)
 
     def getSenders(self, debug):
         return []
@@ -57,7 +52,6 @@ class SimpleCar(AbstractCar):
 
 
 class SimpleConnection:
-
     def commandReader(self, callback):
         print
         while True:
@@ -71,3 +65,55 @@ class SimpleConnection:
 
     def destroy(self):
         print "Connection closed"
+
+
+class SimpleControlProcessor:
+    def __init__(self, controlDef):
+        self.listeners = []
+        self.value = ValueTracker()
+        self.controlDef = controlDef
+
+    def registerListener(self, listener):
+        self.listeners.append(listener)
+
+    def notifyListeners(self):
+        for l in self.listeners:
+            l(self.controlDef.name, self.value.value, self.value.prev)
+
+    def setNewValue(self, newValue):
+        return self.value.setNewValue(newValue)
+
+    def getValue(self):
+        return self.value.value
+
+    @staticmethod
+    def wrap(controlDefs):
+        controlProcessors = {}  #JRTODO python way to do this?
+        for key, controlDef in controlDefs.items():
+            controlProcessors[key] = SimpleControlProcessor(controlDef)
+        return controlProcessors
+
+
+class SimpleControlDef:
+    def __init__(self, name):
+        self.name = name
+
+
+class ValueTracker:
+    def __init__(self):
+        self.value = None
+        self.prev = None
+
+    def _isNewValue(self, newValue):
+        return self.value != newValue
+
+    def _isSameValue(self, newValue):
+        return self.value == newValue
+
+    def setNewValue(self, newValue):
+        if self._isNewValue(newValue):
+            self.prev = self.value
+            self.value = newValue
+            return True
+        else:
+            return False

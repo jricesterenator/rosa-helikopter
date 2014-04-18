@@ -1,6 +1,5 @@
-from controls import *
-from canbus import *
-from car import AbstractCar
+from car import *
+from canbus import CANBusMonitor, CANBus
 
 def parseCANString(m):
     sender = int(m[:3], 16)
@@ -12,25 +11,31 @@ def parseCANValue(hexMsg, byteIndex, mask):
     return shiftedMsg & mask
 
 class CANCar(AbstractCar):
-    def __init__(self, controlList, connection):
-        controls = {}
-        for key, controlDef in controlList.items():
-            controls[key] = CANControlProcessor(controlDef)
+    class CANControlProcessor(SimpleControlProcessor):
+        def __init__(self, can_control):
+            SimpleControlProcessor.__init__(self, can_control)
+            self.canValue = ValueTracker()
 
-        AbstractCar.__init__(self, controls, connection)
+        @staticmethod
+        def wrap(controlDefs):
+            processors = {}        #JRTODO python way?
+            for key, controlDef in controlDefs.items():
+                processors[key] = CANCar.CANControlProcessor(controlDef)
+            return processors
+
+
+    def __init__(self, controlList, connection):
+        AbstractCar.__init__(self, CANCar.CANControlProcessor.wrap(controlList), connection)
 
     def getSenders(self, debugAllControls=False):
-        if debugAllControls:#follow all inputs, even if they don't have listeners
-            ids = set()
-            for control in self.controlProcessors.values():
-                ids.add(control.controlDef.sender)
-            return ids
+        #Debug means to follow all known inputs, even if they don't have listeners
+        if debugAllControls:
+            return set([c.controlDef.sender
+                            for c in CANCar.self.controlProcessors.values()])
         else:
-            ids = set()
-            for control in self.controlProcessors.values():
-                if control.listeners:
-                    ids.add(control.sender)
-            return ids
+            return set([c.controlDef.sender
+                            for c in CANCar.self.controlProcessors.values()
+                            if c.listeners])
 
     def processMessage(self, m):
         try:
@@ -78,7 +83,7 @@ class CANCar(AbstractCar):
 
         def _getPrintableCANValue(value):
             string = "NOT_SET"
-            if value != None:
+            if value is not None:
                 string = "0x" + ("%x" % value).upper()
             return string
 
@@ -99,7 +104,7 @@ class CANSerialConnection:
         self.debugAllControls = debugAllControls
 
     def connectToCar(self, canCar):
-        self.canMonitor = Bus.CANBusMonitor(Bus.CANBus(self.serial))
+        self.canMonitor = CANBusMonitor(CANBus(self.serial))
         self.canMonitor.setup()
         self.canMonitor.startCANMonitor(canCar.getSenders(self.debugAllControls), canCar.processMessage)
         return canCar
@@ -110,12 +115,6 @@ class CANSerialConnection:
             self.serial.close()
             print "Serial connection closed"
 
-
-class CANControlProcessor(AbstractControlProcessor):
-    def __init__(self, can_control):
-        AbstractControlProcessor.__init__(self, can_control)
-        self.canValue = ValueTracker()
-
 class CANControlDef:
     def __init__(self, name, sender, byteIndex, mask, cvmap=None, cvfunc=None):
         self.name = name
@@ -125,7 +124,7 @@ class CANControlDef:
 
         if cvmap is not None:
             self.correctionFx = self._CorrectedValueMap(name, cvmap).correctValue
-        elif cvfunc is not None:
+        elif cvfunc:
             self.correctionFx = cvfunc
         else:
             raise ValueError("Either a corrected value map or function is required.")
@@ -134,14 +133,9 @@ class CANControlDef:
         return sender == self.sender
 
     def getCorrectedValue(self, value):
-        if value == None:
+        if value is None:
             return None
-
-        try:
-            return self.correctionFx(value)
-        except ValueError:
-            print "[WARNING] Unhandled value for %s: %s" % (self.name, value)
-            return None
+        return self.correctionFx(value)
 
     class _CorrectedValueMap:
         def __init__(self, name, m):
@@ -151,4 +145,5 @@ class CANControlDef:
             if value in self.map:
                 return self.map[value]
             else:
-                raise ValueError()
+                print "[WARNING] Unhandled value for %s: %s" % (self.name, value)
+                return None

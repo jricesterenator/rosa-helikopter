@@ -1,5 +1,5 @@
-from car.allcan import CANControlDef
-from car.controls import ControlDefs
+from car.cancar import CANControlDef
+from car.car import SimpleControlDef
 
 """
     We need to convert to degrees first, then we can set it to -1...1
@@ -53,17 +53,17 @@ MAZDA_3_2010_CAN_CONTROLS = {
 }
 
 MAZDA_3_2010_SIMPLE_CONTROLS = {
-    'reverse'   : ControlDefs.SimpleControlDef('reverse'),
-    'handbrake' : ControlDefs.SimpleControlDef('handbrake'),
-    'neutral'   : ControlDefs.SimpleControlDef('neutral'),
-    'ingear'    : ControlDefs.SimpleControlDef('ingear'),
-    'brake'     : ControlDefs.SimpleControlDef('brake'),
-    'clutch'    : ControlDefs.SimpleControlDef('clutch'),
-    'steering1' : ControlDefs.SimpleControlDef('steering1'),
-    'hazards'   : ControlDefs.SimpleControlDef('hazards'),
-    'seatbelt'  : ControlDefs.SimpleControlDef('seatbelt'),
-    'highbeams' : ControlDefs.SimpleControlDef('highbeams'),
-    'right_blinker'  : ControlDefs.SimpleControlDef('right_blinker'),
-    'left_blinker'   : ControlDefs.SimpleControlDef('left_blinker'),
-    'gas1'      : ControlDefs.SimpleControlDef('gas1')
+    'reverse'   : SimpleControlDef('reverse'),
+    'handbrake' : SimpleControlDef('handbrake'),
+    'neutral'   : SimpleControlDef('neutral'),
+    'ingear'    : SimpleControlDef('ingear'),
+    'brake'     : SimpleControlDef('brake'),
+    'clutch'    : SimpleControlDef('clutch'),
+    'steering1' : SimpleControlDef('steering1'),
+    'hazards'   : SimpleControlDef('hazards'),
+    'seatbelt'  : SimpleControlDef('seatbelt'),
+    'highbeams' : SimpleControlDef('highbeams'),
+    'right_blinker'  : SimpleControlDef('right_blinker'),
+    'left_blinker'   : SimpleControlDef('left_blinker'),
+    'gas1'      : SimpleControlDef('gas1')
 }

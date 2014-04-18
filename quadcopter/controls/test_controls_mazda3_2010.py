@@ -1,7 +1,7 @@
 #__author__ = 'jjrice'
 #
 import unittest
-from mazda3_2010 import MAZDA_3_2010_CAN_CONTROLS
+from controls_mazda3_2010 import MAZDA_3_2010_CAN_CONTROLS
 from quadcopter.car.car import parseCANString, parseCANValue
 #
 def hexmsg(hexString):

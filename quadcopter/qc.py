@@ -6,10 +6,10 @@ from serial.tools import list_ports
 from car.car import SimpleConnection, SimpleCar
 
 from state_control import DroneStateControl, Not
-from car.allcan import CANSerialConnection, CANCar
+from car.cancar import CANSerialConnection, CANCar
 from ardrone import libardrone, mockardrone
 from ardrone.myardrone import MyARDrone
-from controls.mazda3_2010 import *
+from controls.controls_mazda3_2010 import *
 
 DEV_REAL = '/dev/tty.OBDLinkMX-STN-SPP'
 BAUD_REAL = 500000
