@@ -64,7 +64,7 @@ class ControlDefs:
             self.mask = mask
 
             if cvmap is not None:
-                self.correctionFx = self._CorrectedValueMap(cvmap).correctValue
+                self.correctionFx = self._CorrectedValueMap(name, cvmap).correctValue
             elif cvfunc is not None:
                 self.correctionFx = cvfunc
             else:
@@ -76,10 +76,15 @@ class ControlDefs:
         def getCorrectedValue(self, value):
             if value == None:
                 return None
-            return self.correctionFx(value)
+
+            try:
+                return self.correctionFx(value)
+            except ValueError:
+                print "[WARNING] Unhandled value for %s: %s" % (self.name, value)
+#                raise ValueError("Unhandled value for %s: %s" % (self.name, value))
 
         class _CorrectedValueMap:
-            def __init__(self, m):
+            def __init__(self, name, m):
                 self.map = m
 
             def correctValue(self, value):

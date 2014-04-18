@@ -2,6 +2,15 @@ from serial.tools import list_ports
 from controls import *
 from canbus import *
 
+def parseCANString(m):
+    sender = int(m[:3], 16)
+    hexmsg = int(m.replace(' ', '')[3:19], 16)
+    return sender, hexmsg
+
+def parseCANValue(hexMsg, byteIndex, mask):
+    shiftedMsg = hexMsg >> (8 * (byteIndex-1))
+    return shiftedMsg & mask
+
 class Cars:
 
     class AbstractCar:
@@ -77,9 +86,7 @@ class Cars:
                 self._processCANMessage(control, sender, hexmsg)
 
         def _parseCANString(self, m):
-            sender = int(m[:3], 16)
-            hexmsg = int(m.replace(' ', '')[3:19], 16)
-            return sender, hexmsg
+            return parseCANString(m)
 
         def _processCANMessage(self, control, sender, hexmsg):
             control_def = control.control_def
@@ -109,8 +116,7 @@ class Cars:
 
 
         def _parseCANValue(self, hexMsg, byteIndex, mask):
-            shiftedMsg = hexMsg >> (8 * (byteIndex-1))
-            return shiftedMsg & mask
+            return parseCANValue(hexMsg, byteIndex, mask)
 
         def _printChangeInfo(self, control_def, prevValue, newValue):
 
@@ -162,6 +168,7 @@ class CarConnectors:
                 print "  " + p
 
         def destroy(self):
+            self.canMonitor.destroy()
             if self.serial:
                 self.serial.close()
                 print "Serial connection closed"

@@ -1,3 +1,5 @@
+##JRTODO handle when the car starts in fwd or reverse. might have issues
+
 
 def Not(value):
     return value is not None and not value

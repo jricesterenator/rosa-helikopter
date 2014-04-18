@@ -6,7 +6,7 @@ import serial
 from state_control import DroneStateControl, Not
 from car.canbus import *
 from car.car import *
-from ardrone import libardrone, mockardrone
+from ardrone import libardrone, mockardrone, myardrone
 from controls.mazda3_2010 import *
 
 class Inputs:
@@ -47,7 +47,7 @@ class MyInputs(Inputs):
 
             'straight_motion_active' : lambda : Not(c('neutral')),
             'straight_speed' : lambda : c('gas1'),
-            'forward' : lambda : c('ingear'),#JRTODO: does INGEAR set when reverse active?
+            'forward' : lambda : c('ingear') and Not(c('reverse')),
             'reverse' : lambda : c('reverse'),
 
             'vertical_motion_active' : lambda : c('neutral'),
@@ -74,12 +74,12 @@ class MyInputs(Inputs):
 
 
 
-
 class App:
     def __init__(self):
         self.drone = None
         self.car = None
-        self.canMonitor = None
+        self.isTicking = False
+        atexit.register(self.destroy)
 
     def start(self):
         self.drone = DRONE()
@@ -94,18 +94,20 @@ class App:
         for control in car.getControlsList():
             control.registerListener(self.cs.received_input)
 
+    def startTicking(self):
+        self.isTicking = True
+        while self.isTicking:
+            self.cs.tick()
+            time.sleep(1)
 
     def destroy(self):
-        print "SHUTDOWN!"
+        print "---------------- SHUTDOWN ---------------- "
+        self.isTicking = False
+
         if self.drone:
             self.drone.halt()
 
-        if self.canMonitor:
-            self.canMonitor.destroy()
-
         CAR_CONNECTION.destroy()
-
-
 
 
 
@@ -119,8 +121,8 @@ if __name__ == '__main__':
 
 
 ##CAN Real setup - Real drone
-#    DEV = '/dev/tty.OBDLinkMX-STN-SPP'
-#    BAUD = 500000
+    DEV = '/dev/tty.OBDLinkMX-STN-SPP'
+    BAUD = 500000
 #
 #    CAR_CONNECTION = CarConnectors.CANSerialConnection(serial.Serial(DEV, BAUD))
 #    CAR = Cars.CANCar(MAZDA_3_2010_CONTROLS)
@@ -144,9 +146,20 @@ if __name__ == '__main__':
 
 
 #Test Setup - In-memory CAN testing
-    CAR_CONNECTION = CarConnectors.BasicConnection()
+#    CAR_CONNECTION = CarConnectors.BasicConnection()
+#    CAR = Cars.CANCar(MAZDA_3_2010_CONTROLS)
+#    INPUTS = MyInputs(CAR.controls)
+#    DRONE = mockardrone.MockARDrone
+
+
+
+
+    CAR_CONNECTION = CarConnectors.CANSerialConnection(serial.Serial(DEV, BAUD), debugAllControls=True)
+#    CAR_CONNECTION = CarConnectors.BasicConnection()
     CAR = Cars.CANCar(MAZDA_3_2010_CONTROLS)
+#    CAR = Cars.SimpleCar(MAZDA_3_2010_GENERIC_CONTROLS)
     INPUTS = MyInputs(CAR.controls)
+#    DRONE = myardrone.MyARDrone
     DRONE = mockardrone.MockARDrone
 
 
@@ -159,21 +172,27 @@ if __name__ == '__main__':
     ##########################################################################
 
     app = App()
-    atexit.register(app.destroy)
-
     app.start()
-    print "----------------------"
+
+    while True:
+        time.sleep(.001)
+#    app.startTicking()
 
 
-    CAR.processMessage("999 00 00 00 00 00 00 00 01") #seatbelt
-#    CAR.processMessage("998 00 00 00 00 00 00 00 01") #hazards
-    app.cs.tick()
 
-    CAR.processMessage("39E 00 00 20 00 00 00 00 00") #handbrake active
-    app.cs.tick()
 
-    CAR.processMessage("39E 00 00 00 00 00 00 00 00") #handbrake OFF
-    app.cs.tick()
+
+
+#
+#    CAR.processMessage("999 00 00 00 00 00 00 00 01") #seatbelt
+##    CAR.processMessage("998 00 00 00 00 00 00 00 01") #hazards
+#    app.cs.tick()
+#
+#    CAR.processMessage("39E 00 00 20 00 00 00 00 00") #handbrake active
+#    app.cs.tick()
+#
+#    CAR.processMessage("39E 00 00 00 00 00 00 00 00") #handbrake OFF
+#    app.cs.tick()
 
     #Take off
 
@@ -182,6 +201,17 @@ if __name__ == '__main__':
 #    CAR.processMessage("seatbelt,1")
 #    CAR.processMessage("handbrake,0")
 #    app.cs.tick()
+#
+#    time.sleep(5)
+#
+#    #Land
+#    CAR.processMessage("handbrake,1")
+#    app.cs.tick()
+#
+#    time.sleep(5)
+
+
+
 #
 #    CAR.processMessage("neutral,1"); CAR.processMessage("ingear,0")
 #    app.cs.tick()
@@ -205,7 +235,7 @@ if __name__ == '__main__':
 
 #    raw_input("Press ENTER to force land and quit.")
 #    app.drone.land()
-    app.drone.halt()
+#    app.drone.halt()
 
 
 
