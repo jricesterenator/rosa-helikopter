@@ -36,6 +36,9 @@ class SimpleCar(AbstractCar):
 
         AbstractCar.__init__(self, controlProcessors, connection)
 
+    def getSenders(self, debug):
+        return []
+
     def processMessage(self, msg):
         if ',' not in msg:
             print '[ERROR] Invalid simple car message (%s). ' \

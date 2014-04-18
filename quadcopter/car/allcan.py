@@ -99,11 +99,11 @@ class CANSerialConnection:
         self.debugAllControls = debugAllControls
 
 
-    def connectToCar(self, can_car):
+    def connectToCar(self, canCar):
         self.canMonitor = Bus.CANBusMonitor(Bus.CANBus(self.serial))
         self.canMonitor.setup()
-        self.canMonitor.startCANMonitor(can_car.getSenders(self.debugAllControls), can_car.processMessage)
-        return can_car
+        self.canMonitor.startCANMonitor(canCar.getSenders(self.debugAllControls), canCar.processMessage)
+        return canCar
 
     def destroy(self):
         self.canMonitor.destroy()

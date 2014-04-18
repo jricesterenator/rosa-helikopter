@@ -111,25 +111,43 @@ class MonitorOutputThread(SerialThread):
         while self.running:
 
             msg = raw_input("::").strip()
-            sender = int(msg[:3], 16)
 
-            allowed = False
-            for id, mask in self.data.allowedSenders:
-                if (id & mask) == (sender & mask):
-                    allowed = True
-                    break
+            if CAN_MESSAGES and len(msg):
+                try:
+                    sender = int(msg[:3], 16)
+                except ValueError:
+                    print "[ERROR] Invalid CAN message, not sending.", msg
+                    continue
 
-            if allowed or not len(msg):
+                allowed = False
+                for id, mask in self.data.allowedSenders:
+                    if (id & mask) == (sender & mask):
+                        allowed = True
+                        break
+
+                if allowed:
+                    self.writeln(msg)
+                    time.sleep(PLAYBACK_SPEED)
+                else:
+                    print "[DEBUG] Skipping message because it's not an allowed sender.", msg
+            else:
                 self.writeln(msg)
                 time.sleep(PLAYBACK_SPEED)
-            else:
-                print "[DEBUG] Skipping message because it's not an allowed sender.", msg
 
 
 if __name__ == '__main__':
     ser = serial.Serial('/tmp/fake1', 9600)
     readerThread = ReaderThread(ser)
     readerThread.start()
+
+    print "Usage: %s [-s]" % sys.argv[0]
+    print "  -s Use simple mode (Ex: 'handbrake,0' instead of CAN)"
+    print "     By default, CAN is used."
+
+    if len(sys.argv) > 1 and sys.argv[1] == '-s':
+        CAN_MESSAGES=False
+    else:
+        CAN_MESSAGES=True
 
     while True:
         time.sleep(.1)

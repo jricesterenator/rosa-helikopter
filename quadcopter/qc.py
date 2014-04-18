@@ -168,7 +168,8 @@ if __name__ == '__main__':
     print "What type of car connection?"
     print "1) Simple Car, with simple messages (<input>,<value>)"
     print "2) Simple Car, with CAN messages"
-    print "3) Serial Car"
+    print "3) Serial Car, with simple messages (<input>,<value>)"
+    print "4) Serial Car, with CAN messages"
     choice = raw_input("[Simple car, simple msgs] : ")
 
     if choice == "2":
@@ -182,8 +183,9 @@ if __name__ == '__main__':
         CONNECTION = SimpleConnection()
         CAR = CANCar(CONTROLS, CONNECTION)
 
-    elif choice == "3":
+    elif choice in ("3", "4"):
 
+        connectionChoice = choice
         print
         print "Serial params?"
         print "1) %s @%skbps" % (DEV_REAL, BAUD_REAL)
@@ -216,9 +218,14 @@ if __name__ == '__main__':
             Pass the real DEVice to get the real car. Or pass a loopback DEVice
             and connect to a mock car implementation running elsewhere.
         """
-        CONTROLS = MAZDA_3_2010_CAN_CONTROLS
-        CONNECTION = CANSerialConnection(serial.Serial(DEV, BAUD), debugAllControls=True)
-        CAR = CANCar(CONTROLS, CONNECTION)
+        if connectionChoice == "3":
+            CONTROLS = MAZDA_3_2010_SIMPLE_CONTROLS
+            CONNECTION = CANSerialConnection(serial.Serial(DEV, BAUD), debugAllControls=True)
+            CAR = SimpleCar(CONTROLS, CONNECTION)
+        else:
+            CONTROLS = MAZDA_3_2010_CAN_CONTROLS
+            CONNECTION = CANSerialConnection(serial.Serial(DEV, BAUD), debugAllControls=True)
+            CAR = CANCar(CONTROLS, CONNECTION)
 
     else:
         print "Using Simple Car, with simple messages (<input>,<value>)"
