@@ -44,6 +44,8 @@ class ARDroneNetworkProcess(multiprocessing.Process):
         self.video_pipe = video_pipe
         self.com_pipe = com_pipe
 
+        self.daemon = True
+
     def run(self):
         video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         video_socket.setblocking(0)
@@ -98,6 +100,11 @@ class IPCThread(threading.Thread):
         threading.Thread.__init__(self)
         self.drone = drone
         self.stopping = False
+
+        """
+            JRTODO: Made this a daemon thread so Ctrl-C will kill the process properly
+        """
+        self.daemon = True
 
     def run(self):
         while not self.stopping:

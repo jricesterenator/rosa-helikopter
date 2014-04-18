@@ -14,7 +14,6 @@ class MyARDrone(ARDrone):
         self.speeds = [0, 0, 0, 0] #lr, fb, vv, va
 
     def _move(self):
-        print "MOVE:", self.speeds
         self.at(at_pcmd, True,
             self.speeds[LEFT_RIGHT],
             self.speeds[FRONT_BACK],
@@ -30,6 +29,7 @@ class MyARDrone(ARDrone):
         self._move()
 
     def move_up(self, speed):
+        print "Moving up at", speed
         self.speeds[VERTICAL] = speed
         self._move()
 
@@ -52,6 +52,9 @@ class MyARDrone(ARDrone):
     def turn_right(self, speed):
         self.speeds[ANGULAR] = speed
         self._move()
+
+    def halt(self):
+        print "Halting drone communications."
 
     def land(self):
         print "JRTODO: Current fly state:", self.navdata['drone_state']['fly_mask']
