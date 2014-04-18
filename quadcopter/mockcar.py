@@ -62,7 +62,6 @@ class ReaderThread(SerialThread):
                 elif uc.startswith("STFCP"): #clear senders
                     self.data.allowedSenders = []
                 elif uc.startswith("STFAP"): #allowed senders
-                    #JRTODO do the masking properly
                     id,mask = uc[len('STFAP '):].split(',')
                     idhex = int(id, 16)
                     maskhex = int(mask, 16)
