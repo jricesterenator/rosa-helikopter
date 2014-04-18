@@ -41,7 +41,6 @@ class SimpleControlProcessor(AbstractControlProcessor):
     def __init__(self, controlDef):
         AbstractControlProcessor.__init__(self, controlDef)
 
-
 class ControlDefs:
     class SimpleControlDef:
         def __init__(self, name):
