@@ -4,6 +4,7 @@ import threading
 import re
 
 DEBUG = False
+ROGUE_CHECK_WAIT=3 #seconds. (1 is fine for the real car. Might need more for mock car)
 
 def log(text):
     if DEBUG:
@@ -34,7 +35,7 @@ class Bus:
             self._sendCommand(command, callback)
 
         def stopAsyncCommand(self, checkForRogue):
-            if self.commandActive or (checkForRogue and self.reader.checkForRogueCommand(1)):
+            if self.commandActive or (checkForRogue and self.reader.checkForRogueCommand(ROGUE_CHECK_WAIT)):
                 print "Stopping active command"
                 self._write("\r\n")
                 self.reader.waitForCommand()
@@ -82,7 +83,8 @@ class Bus:
             self.can.reset()
 
             self.can.sendCommand('atl1') #\r\n line endings
-            self.can.sendCommand('ati')
+            print "[INFO] Device:", self.can.sendCommand('ati')[0] #say hello to the device
+            print "[INFO] Car Battery Voltage:", self.can.sendCommand("atrv")[0]  #Car battery voltage
             self.can.sendCommand('ath1') #headers on
             self.can.sendCommand('ats1') #include spaces
             self.can.sendCommand('atal') #allow long messages
@@ -126,7 +128,11 @@ class ReaderThread(threading.Thread):
     def checkForRogueCommand(self, waitTime):
 
         print "Checking if CAN stream is still active."
-        time.sleep(waitTime)
+        try:
+            time.sleep(waitTime)
+        except KeyboardInterrupt:
+            import thread
+            thread.interrupt_main()
 
         if self.async.rogueData:
             print "Rogue data Found."
@@ -253,5 +259,9 @@ class ReaderThread(threading.Thread):
 
         def waitFor(self):
             while self.running or self.rogueData:
-                time.sleep(.001)
+                try:
+                    time.sleep(.001)
+                except KeyboardInterrupt:
+                    import thread
+                    thread.interrupt_main()
 

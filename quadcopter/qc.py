@@ -18,6 +18,9 @@ DEV_MOCK = '/tmp/fake2'
 BAUD_MOCK = 9600
 
 
+STATE_TICK_SPEED=1 #seconds
+
+
 class Inputs:
     def __init__(self, controlProcessors, inputs):
         self.controlProcessors = controlProcessors
@@ -107,15 +110,16 @@ class App:
 
 
     def startTicking(self):
+        self.isTicking = True
         if self.drone:
-            self.isTicking = True
             while self.isTicking:
                 self.cs.tick()
-                time.sleep(1)
+                time.sleep(STATE_TICK_SPEED)
         else:
             print "[WARNING] No drone connected, so not ticking drone states."
             while self.isTicking:
                 time.sleep(.001)
+        print "NO TICK"
 
     def destroy(self):
         print "---------------- SHUTDOWN ---------------- "
