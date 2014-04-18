@@ -1,5 +1,5 @@
 ##JRTODO handle when the car starts in fwd or reverse. might have issues
-
+##JRTODO If hovering dont need to keep sending hover continuously
 
 def Not(value):
     return value is not None and not value
@@ -228,8 +228,7 @@ class DroneStateControl:
             speed = 0
 
         self.dstate['vertical_motion'] = newState
-        self.set_speed(speed)
-        self.drone.move_up()
+        self.drone.move_up(speed)
 
     def descend(self, speed=0, stop=False):
         newState = self.VERTICAL_DESCEND
@@ -238,8 +237,7 @@ class DroneStateControl:
             speed = 0
 
         self.dstate['vertical_motion'] = newState
-        self.set_speed(speed)
-        self.drone.move_down()
+        self.drone.move_down(speed)
 
     def forward(self, speed=0, stop=False):
         newState = self.STRAIGHT_FWD
@@ -248,8 +246,7 @@ class DroneStateControl:
             speed = 0
 
         self.dstate['straight_motion'] = newState
-        self.set_speed(speed)
-        self.drone.move_forward()
+        self.drone.move_forward(speed)
 
     def reverse(self, speed=0, stop=False):
         newState = self.STRAIGHT_REVERSE
@@ -258,8 +255,7 @@ class DroneStateControl:
             speed = 0
 
         self.dstate['straight_motion'] = newState
-        self.set_speed(speed)
-        self.drone.move_backward()
+        self.drone.move_backward(speed)
 
     def strafe_left(self, speed=0, stop=False):
         newState = self.STRAFE_LEFT
@@ -268,8 +264,7 @@ class DroneStateControl:
             speed = 0
 
         self.dstate['side_motion'] = newState
-        self.set_speed(speed)
-        self.drone.move_left()
+        self.drone.move_left(speed)
 
     def strafe_right(self, speed=0, stop=False):
         newState = self.STRAFE_RIGHT
@@ -278,8 +273,7 @@ class DroneStateControl:
             speed = 0
 
         self.dstate['side_motion'] = newState
-        self.set_speed(speed)
-        self.drone.move_right()
+        self.drone.move_right(speed)
 
     def rotate_left(self, speed=0, stop=False):
         newState = self.ROTATE_LEFT
@@ -288,8 +282,7 @@ class DroneStateControl:
             speed = 0
 
         self.dstate['rotation'] = newState
-        self.set_speed(speed)
-        self.drone.turn_left()
+        self.drone.turn_left(speed)
 
     def rotate_right(self, speed=0, stop=False):
         newState = self.ROTATE_RIGHT
@@ -298,11 +291,7 @@ class DroneStateControl:
             speed = 0
 
         self.dstate['rotation'] = newState
-        self.set_speed(speed)
-        self.drone.turn_right()
-
-    def set_speed(self, speed):
-        self.drone.set_speed(speed)
+        self.drone.turn_right(speed)
 
     def hover(self):
         self.drone.hover()

@@ -9,7 +9,7 @@ ANGULAR = 3
 
 class MyARDrone(ARDrone):
 
-    def __init__(self, drone):
+    def __init__(self):
         ARDrone.__init__(self)
         self.speeds = [0, 0, 0, 0] #lr, fb, vv, va
 

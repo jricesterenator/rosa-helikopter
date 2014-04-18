@@ -7,7 +7,8 @@ from car.car import SimpleConnection, SimpleCar
 
 from state_control import DroneStateControl, Not
 from car.allcan import CANSerialConnection, CANCar
-from ardrone import libardrone, mockardrone, myardrone
+from ardrone import libardrone, mockardrone
+from ardrone.myardrone import MyARDrone
 from controls.mazda3_2010 import *
 
 DEV_REAL = '/dev/tty.OBDLinkMX-STN-SPP'
@@ -154,7 +155,7 @@ if __name__ == '__main__':
         DRONE_CLASS = mockardrone.MockARDrone
     elif choice == "2":
         print "Using real drone"
-        DRONE_CLASS = libardrone.ARDrone
+        DRONE_CLASS = MyARDrone
     else:
         print "No drone connected."
         DRONE_CLASS = None
