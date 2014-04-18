@@ -1,7 +1,7 @@
 #__author__ = 'jjrice'
 #
 import unittest
-from mazda3_2010 import MAZDA_3_2010_CONTROLS
+from mazda3_2010 import MAZDA_3_2010_CAN_CONTROLS
 from quadcopter.car.car import parseCANString, parseCANValue
 #
 def hexmsg(hexString):
@@ -24,7 +24,7 @@ def hexmsg(hexString):
 class HandbrakeTest(unittest.TestCase):
 
     def testBrake(self):
-        self.c = MAZDA_3_2010_CONTROLS['hazards']
+        self.c = MAZDA_3_2010_CAN_CONTROLS['hazards']
         self.assertTrue(self.c.senderMatches(0x39E))
 
         sender, hexMsg = parseCANString("39E 00 03 20 7F 00 10 01 0E")

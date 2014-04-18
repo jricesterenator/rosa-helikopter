@@ -27,6 +27,7 @@ class DroneStateControl:
     ROTATE_RIGHT = 1
 
     def __init__(self, inputs, drone):
+        self.lastPrintedState = None
         self.dstate = {
             'takeoff'   : self.TAKE_OFF_ON_GROUND,
             'emergency' : 0,
@@ -40,12 +41,14 @@ class DroneStateControl:
 
         self.dirty = True
 
-    def print_state(self):
-        print "----------------------"
-        print "|STATE"
-        for k,v in self.dstate.items():
-            print "|",k,v
-        print "----------------------"
+    def print_state(self, force=False):
+        if force or self.dstate != self.lastPrintedState:
+            self.lastPrintedState = self.dstate
+            print "----------------------"
+            print "|STATE"
+            for k,v in self.dstate.items():
+                print "|",k,v
+            print "----------------------"
 
     """Callback when any input changes"""
     def received_input(self, name, prev, curr):
