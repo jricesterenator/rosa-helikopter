@@ -44,6 +44,9 @@ class ARDroneNetworkProcess(multiprocessing.Process):
         self.video_pipe = video_pipe
         self.com_pipe = com_pipe
 
+        """
+           JRTODO: Made this a daemon thread so Ctrl-C will kill the process properly
+        """
         self.daemon = True
 
     def run(self):
