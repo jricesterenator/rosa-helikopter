@@ -98,7 +98,6 @@ class CANSerialConnection:
         self.serial = serial
         self.debugAllControls = debugAllControls
 
-
     def connectToCar(self, canCar):
         self.canMonitor = Bus.CANBusMonitor(Bus.CANBus(self.serial))
         self.canMonitor.setup()
