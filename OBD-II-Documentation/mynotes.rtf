@@ -1,0 +1,361 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1138\cocoasubrtf510
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset0 Monaco;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f0\fs24 \cf0 bash-3.2$ python -m serial.tools.list_ports\
+/dev/tty.Bluetooth-Modem\
+/dev/tty.Bluetooth-PDA-Sync\
+/dev/tty.Nexus4-    \
+
+\b /dev/tty.OBDLinkMX-STN-SPP
+\b0 \
+4 ports found\
+\
+Choosing other protocols: file:///Users/jjrice/Downloads/mx_protocol_commands%20(1).pdf\
+\
+HS/MS-CAN data\
+file://localhost/Users/jjrice/Desktop/mazdatechinfo/highlights/books/i3w09/html/id0940001038b2.html\
+\
+\
+If you're getting a BUFFER FULL error, crank up the baud rate. The problem is the device is buffering data that the computer isnt pulling out fast enough\
+\
+ATL1  (turn off \\r in line feeds)\
+ATI (device info)\
+ATSP0 (verify connected to ECU)\
+\
+\
+ATSP 6 (CAN 11bit ID, 500kbaud)\
+\
+ATBRD 08 (set the internal baud rate to 500k)\
+\
+ATCAF1\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\f1\fs20 \cf0 >0902\
+014                      (says 14b total)\
+0: 49 02 01 4A 4D 31 \
+1: 42 4C 31 48 35 31 41 \
+2: 31 32 34 37 32 32 33 \
+\
+ATCAF0\
+>0902\
+NO DATA\
+\
+\
+\
+ATCAF0\
+75 26 27 10 00 6C 5C 00 \
+FF FE 80 00 48 48 00 E7 \
+27 10 27 10 27 10 27 10 \
+02 00 0F 01 AA 55 AA 55 \
+\
+ATCAF1\
+00 2F 94 27 35 14 00 04 \
+2: A6 00 00 00 00 00 00 \
+00 01 14 00 00 00 0B 00 \
+67 0A F7 08 07 B5 0F FF <DATA ERROR\
+75 26 27 10 00 5C 6C 00 <DATA ERROR\
+FF FE 80 00 48 48 00 F6 <DATA ERROR\
+E: FC FF 4C FE D4 00 00 \
+7: 10 27 10 27 10 27 10 \
+\
+ATH1\
+205 00 00 00 00 00 00 00 00 \
+228 00 04 00 00 00 00 00 00 \
+231 01 59 00 00 FF 00 80 00 \
+240 00 80 00 00 00 00 00 00 \
+250 00 2F 94 26 35 14 00 04 \
+090 F7 09 F7 09 07 B6 0F FF <DATA ERROR\
+20F 75 27 27 10 00 EC DC 00 <DATA ERROR\
+211 FF FE 80 00 48 48 00 4F <DATA ERROR\
+082 2F FC FF 4C FE D4 00 00 \
+4B0 27 10 27 10 27 10 27 10 \
+\
+\
+\
+ADVANCED FILTERING (see STN1100 datasheet and extended commands)\
+stfcp (clear all pass filters)\
+stfap 205,fff (add pass filter for 205)\
+stfap 228,fff (add pass filter for 228)\
+stm (monitor using filters)\
+\'85the fff's are masks and can be changed to look only at certain bits\
+\
+\
+\
+205 always 0s\
+4B0 27 10 27 10 27 10 27 10 \
+\
+atcra xxx (listen for sender)\
+\
+\
+201 - Accelerator pedal position\
+228 - neutral indicator\
+  228 00 00 00 00 00 00 00 00 (neutral)\
+  228 00 04 00 00 00 00 00 00 (in gear)\
+\
+250 another accelerator pedal\
+  UP = 250 00 30 94 26 36 14 00 04\
+  FULLY DOWN = 250 00 30 94 D7 36 D2 00 04\
+\
+170 another pedal (bytes 3/4)\
+  UP = 170 26 EE 27 99 27 1C 6B 17 \
+  DOWN = 170 26 EE 27 99 28 CB 6A 17 \
+\
+4b0 (some kind of wheel speed)\
+\
+165 something with engine speed\
+  (byte 4 from right changes with accell pedal from C0 (full up) to 00 (any amount of activation. only the 2 vals))\
+\
+190 (brake active)\
+  not depressed - 190 00 00 00 00 00 00 00 00\
+  depressed - 190 00 00 40 00 00 00 00 00\
+\
+200 RPM-based\
+\
+201 - RPM-based (over 2k rpm, start getting data errors)\
+byte 2 is accelerator pedal position. 00 (up) to C8 (down), continuous\
+\
+205\
+ byte 6 - brake (0=up, 40=down)\
+\
+20F - ?\
+\
+211 - ?\
+ (byte 3 - DSC switch)\
+ 0x0 (off)\
+ 0x48 (on)\
+\
+212 - ?\
+231 - ?\
+240?\
+250-rpm based\
+\
+340?\
+350?\
+37B?\
+\
+400?\
+405?\
+420?\
+42B?\
+ (byte 8) AFS\
+ 0000 ???? AFS on\
+ 0010 ???? AFS off\
+\
+\
+430\
+(from before:430 21  and 430 22 something to do with seat heating. temp?)\
+(byte 7)\
+0011 0111 (default)\
+0011 0110 (when lights, brights on. Sometimes when rear wiper fluid). Pulse between 36  and 37 when in reverse. or when hazards on. different pulse speed..or when butt heaters on highish\
+\
+(byte 1) climate fan speed\
+0000 0000 (off)\
+0010 0000 (low, 1 click)\
+0011 0000 (2 clicks)\
+0100 0000 (3 clicks)\
+0101 0000 (4 clicks)\
+0110 0000 (5 clicks)\
+0111 0000 (6 clicks)\
+1000 0000 (7 clicks, full)\
+\
+433?\
+  (byte 1)\
+  ???? 0000 (no lights)\
+  ???? 0001 (lights on in any fashion)\
+\
+  (byte 5)\
+  ???? 0000 (no handbrake)\
+  ???? 0001 (handbrake)\
+  ???? 0010 (reverse)\
+  ???? 1000 (blower fan on)\
+ \
+\
+\
+461?\
+  (byte 7)\
+  ???? 0001 no front passenger\
+  ???? 0010 front passenger present (enough for airbags at least)\
+  0000 ???? no belts\
+  0010 ???? driver seatbelt on\
+  0100 ???? front passenger belt on\
+\
+4B0?\
+4EC?\
+ (byte 8) cruise on/off\
+ 0x00 Cruise off\
+ 0x80 Cruise on (1000 0000)\
+ 0xC0 Cruise active and cruising (1100 0000)\
+\
+\
+501?\
+508?\
+\
+\
+39E steering wheel stick ops\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+\cf0 file://localhost/Users/jjrice/Desktop/mazdatechinfo/manual/books/i3w09/html/id0902f5960700.html\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 byte 1 can change, not sure what\
+byte 6 goes from 20 to 22 when rear defrost active; 20 to 28 when parking lights or lights manually on. 2a when both lights and rear defrost. 20 to A0 when manual brights. 28 to A8 when lights on and push out for brights.\
+(prev notes: byte 3 lights in any fashion (parking or reg) (08)..off is 0\'85if auto and it's not dark, it's 0. maybe 08 when dark. brights (if can be seen) go to 80. if just brights, 80. If just lights, 08. If lights+brights\'8588.)\
+\
+8 to 80 when driver door open, 2 goes to 20 then 10 at the same time\
+8 changes with door lock statuses\
+(byte 8)\
+1000 0000 (driver door open)\
+0010 0000 (rear driver door open)\
+0100 0000 (front passenger door open)\
+0001 0000 (rear passenger door open)\
+0000 0001 (driver door locked)\
+\
+(byte 4)\
+0000 0010 (right signal activated, stays on while active) [byte 7 goes between 00000010 and 00000000 when right signal flashing)\
+0000 0100 (left signal activated, stays on while active) [byte 7 goes between 00000001 and 00000000 when left signal is flashing\
+\
+(byte 7)\
+flashes between 00000011 and 00000000 when hazards active (is there another hazard active thing?\
+00000001 and 00000000 (when left flashing)\
+00000010 and 00000000 (when right fashing)\
+\
+\
+byte 4.1 alts between 00 and 40 when main wiper active. also seen 10. ( same vals as 201. C8 and 80 when high and stuff)\
+(prev notes: byte 4 - wipers active (goes to 40) sometimes 80 (80 if triggered, 40 if i spray?)\
+\'85if wipers set to low, 40->80->40->80\
+..if high, 40->C0  (mostly 40, but then C0 sometimes)  )\
+\
+byte 4.1 - 10 when in reverse. 00 otherwise (if wipers on, it might be 5)\
+byte 6, hand brake. (00 down), 20 up.\
+(also, byte 6.2, x8 when lights on) \
+\
+(byte6)\
+00000000 normal\
+00100000 (20) handbrake only\
+10000000 (80) brights only\
+00001000 (08) lights\
+combo examples:\
+10100000 (A0) handbrake + brights\
+10001000 (88) lights + brights\
+10101000 (A8) handbrake+lights+brights\
+\
+\
+\
+\
+\
+39E 00 00 00 7F 00 10 01 17  (default state)\
+  \
+\
+050 \
+byte 5, clutch in or not. 01 (out), 02(in)\
+\
+082 steering wheel position\
+byte 8, counter so you know the seq (always starts with 5)\'85nope seen 9 too in a diff dump\
+byte 7, always FC\
+byte 5,6 (chock left: EB 1A EA A2 00 00), (chock right: 14 E6 14 6E 00 00)\
+3944409762ex\
+file://localhost/Users/jjrice/Desktop/mazdatechinfo/manual/books/i3w09/html/id0902g9960700.html\
+\
+082 5A FC 01 B8 01 40 00 00 <DATA ERROR\
+\
+\
+\
+\
+\
+\
+???\
+274 - clutch in\
+\
+\
+\
+MS-CAN\
+2A0 Climate\
+ byte 7, passenger temp in F (AA if off)\
+ byte 5, blower speed\
+ byte 4, driver temp in F (AA if off)\
+(many more. investigate)\
+\
+28F\
+ byte4 goes from 01 to 81 when vol up happens, or change song button, preset button\
+ byte1\
+   FM1-D0\
+   FM2-C0\
+   AM-C0\
+   CD-C0\
+\
+ byte 5\
+   FM-24\
+   AM-20\
+   CD playing-38\
+   CD pause-20\
+   SAT1-00 when loading, 20 when loaded\
+   SAT2-20\
+   SAT3-20\
+   BT-00 (playing or paused)\
+   AUX-?\
+\
+2F5 Satellite info\
+  (default, sat off: 2F5 00 FF FF 00 7F FF 3F FF)\
+when on byte 8 goes to 10, then 18. then more stuff comes\
+\
+bytes 5-8, station ID\
+when change station, 1-4 goes to 7f ff 3f ff \
+when loaded becomes 01 00 80 00 00 for a sec then 01 01 81 00 00\
+\
+39E\
+  byte8, dash light button, 04 when night mode, 0c when day mode.\
+\
+290 Words on the audio display?\
+flashing between (call 888 AND 539 SIRI)\
+290 C0 20 20 35 33 39 20 53 \
+290 C0 20 20 43 41 4C 4C 20 \
+\
+"FM1:ch3   96.1"\
+290 C0 46 4D 31 63 68 33 20 \
+\
+\
+291 (or an extension of 290?)\
+\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3740\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 CALL 888, 539 SIRI\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 290 C0 20 20 35 33 39 20 53 \
+291 87 49 52 49 20 20 00 00 \
+\
+290 C0 20 20 43 41 4C 4C 20 \
+291 87 38 38 38 20 20 00 00 \
+\
+290 C0 20 20 43 41 4C 4C 20 \
+\
+291 87 38 38 38 20 20 00 00 \
+290 C0 20 20 43 41 4C 4C 20 \
+\
+291 87 38 38 38 20 20 00 00 \
+290 C0 20 20 43 41 4C 4C 20 \
+291 87 38 38 38 20 20 00 00 \
+290 C0 20 20 43 41 4C 4C 20 \
+291 87 38 38 38 20 20 00 00 \
+290 C0 20 20 43 41 4C 4C 20 \
+291 87 38 38 38 20 20 00 00 \
+290 C0 20 20 43 41 4C 4C 20 \
+291 87 38 38 38 20 20 00 00 \
+290 C0 20 20 35 33 39 20 53 \
+291 87 49 52 49 20 20 00 00 \
+290 C0 20 20 35 33 39 20 53 \
+291 87 49 52 49 20 20 00 00 \
+290 C0 20 20 35 33 39 20 53 \
+291 87 49 52 49 20 20 00 00 \
+290 C0 20 20 35 33 39 20 53 \
+291 87 49 52 49 20 20 00 00 \
+290 C0 20 20 35 33 39 20 53 \
+291 87 49 52 49 20 20 00 00 \
+290 C0 20 20 35 33 39 20 53 \
+291 87 49 52 49 20 20 00 00 \
+290 C0 20 20 43 41 4C 4C 20 \
+\
+\
+USE atcaf0 to get rid of the DATA ERRORs\
+look at ATS0 for speed improvements\
+ }
