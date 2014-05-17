@@ -14,14 +14,22 @@ from car.controls_mazda3_2010 import *
 
 ##JRTODO detect if connected to drone for reals or not
 
-
+#
+# Enter the name of the actual OBD-II dongle device here.
+# You want a fast baud rate. 500000 is good if the device supports it.
+#
 DEV_REAL = '/dev/tty.OBDLinkMX-STN-SPP'
 BAUD_REAL = 500000
 
+#
+# Name of the mock serial device for testing against a mock car or CAN bus.
+#
 DEV_MOCK = '/tmp/fake2'
 BAUD_MOCK = 9600
 
-
+#
+# How fast the program should reprocess any changes in input. (default=.1)
+#
 STATE_TICK_SPEED=.1 #seconds
 
 
@@ -36,6 +44,11 @@ class Inputs:
             return 0
         return val
 
+"""
+    Map the drone's actions to your car's inputs. The drone actions are
+    specific and shouldn't be changed. The car inputs should correspond to the
+    inputs identified in your car/controls_*.py file.
+"""
 class MyInputs(Inputs):
 
     def __init__(self, car):
