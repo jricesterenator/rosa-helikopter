@@ -24,6 +24,10 @@ stn1110_vs_elm327.pdf
 ---------------------
 At-a-glance comparison of the ELM vs STN chips.
 
+mx_protocol_commands.pdf
+------------------------
+Good list of the different busses vehicles can support. Use this information to switch between HS and MS CAN busses.
+
 mynotes.rtf
 -----------
 All my notes about decoding the 2010 Mazda 3 high speed and medium speed CAN bus
