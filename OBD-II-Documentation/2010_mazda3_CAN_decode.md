@@ -58,18 +58,21 @@ Byte 5 - Clutch in/out
 
 
 ##### 165 - Engine speed, accel pedal
+```
   Byte 4 - Accel pedal (2 discrete vals). Useful to see if the pedal is activated, but when you don't care it's exact value.
     C0 = Pedal is completele up
     00 = Any amount of activation.
-
+```
 
 ##### 170 - Another accelerator pedal position
   170 26 EE 27 99 27 1C 6B 17 (Up)
   170 26 EE 27 99 28 CB 6A 17 (Down)
+```  
   Bytes 3/4: Accelerator pedal (range)
     27 1C = Up
     28 CB = Down
-    
+```
+
 ##### 190 - Brake
   190 00 00 00 00 00 00 00 00 (Not depressed)
   190 00 00 40 00 00 00 00 00 (Depressed)
