@@ -4,12 +4,11 @@ file://localhost/Users/jjrice/Desktop/mazdatechinfo/manual/books/i3w09/html/id09
 
 #JRTODO: show example messages for each
 
-
 ##### 050 - Clutch
 ```
-  Byte 5 - Clutch in/out
-    01 (0000 0001) - Out
-    02 (0000 0010) - In
+Byte 5 - Clutch in/out
+01 (0000 0001) - Out
+02 (0000 0010) - In
 ```
 
 ##### 082 - Steering wheel position
