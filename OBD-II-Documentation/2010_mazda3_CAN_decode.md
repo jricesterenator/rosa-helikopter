@@ -4,12 +4,14 @@ file://localhost/Users/jjrice/Desktop/mazdatechinfo/manual/books/i3w09/html/id09
 
 #JRTODO: show example messages for each
 
+
+##### 050 - Clutch
 ```
-050 - Clutch
   Byte 5 - Clutch in/out
     01 (0000 0001) - Out
     02 (0000 0010) - In
 ```
+
 082 - Steering wheel position
   Byte 1/2 - Seems to be related to the electronic steering assist motor. When you hear it whirring, these values appear. When it stops, these go to 0000.
   Byte 3/4 - Steering wheel position1 (slightly off from bytes 5/6. Maybe there are 2 sensors?)
@@ -226,4 +228,4 @@ JRTODO: what does the 2nd part mean? byte 2 "8 to 80 when driver door open, 2 go
 501 - ???
 
 508 - ???
-
+```
