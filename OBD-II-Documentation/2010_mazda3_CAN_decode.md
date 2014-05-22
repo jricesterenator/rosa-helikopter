@@ -12,8 +12,11 @@ file://localhost/Users/jjrice/Desktop/mazdatechinfo/manual/books/i3w09/html/id09
     02 (0000 0010) - In
 ```
 
-082 - Steering wheel position
+##### 082 - Steering wheel position
+```  
   Byte 1/2 - Seems to be related to the electronic steering assist motor. When you hear it whirring, these values appear. When it stops, these go to 0000.
+  ```
+  ```
   Byte 3/4 - Steering wheel position1 (slightly off from bytes 5/6. Maybe there are 2 sensors?)
     (See bytes 5/6 for more info)
     Max CW rotation is ~530 deg; Max CCW rotation is ~ -530 deg
@@ -26,7 +29,7 @@ file://localhost/Users/jjrice/Desktop/mazdatechinfo/manual/books/i3w09/html/id09
       Decimal          : 60096      .... 65535/0 ....5180
       10ths of a degree: -5440      .... 0       ....5180
       Degrees          : -544       .... 0       ....518      
-    
+    ```
   Byte 5/6 - Steering wheel position2 (slightly off from bytes 3/4. Maybe there are 2 sensors?)
     Steering wheel position is a 2 byte Big Endian value expressed in 10ths of a degree.
     Top dead center (TDC) is 0 (00 00)
