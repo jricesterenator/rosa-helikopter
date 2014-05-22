@@ -3,6 +3,11 @@
 file://localhost/Users/jjrice/Desktop/mazdatechinfo/manual/books/i3w09/html/id0902g9960700.html
 
 #JRTODO: show example messages for each
+Info Below is in this format:
+<Sender ID> - General description of all data within
+  <Msg Byte> - Purpose of byte
+    <Decimal value for just this item> (<Corresponding Binary. This is what matters.>) - Value description
+
 
 
 050 - Clutch
@@ -180,40 +185,39 @@ JRTODO: what does the 2nd part mean? byte 2 "8 to 80 when driver door open, 2 go
     00 (0000 0000) = AFS on
     02 (0000 0010) = AFS off
 
-430
-(from before:430 21  and 430 22 something to do with seat heating. temp?)
-(byte 7)
-0011 0111 (default)
-0011 0110 (when lights, brights on. Sometimes when rear wiper fluid). Pulse between 36  and 37 when in reverse. or when hazards on. different pulse speed..or when butt heaters on highish
+430 - Climate Fan; Other
+  Byte 1 - Climate fan speed
+    00 (0000 0000) = Off
+    20 (0010 0000) = Low, 1 click
+    30 (0011 0000) = 2 clicks
+    40 (0100 0000) = 3 clicks
+    50 (0101 0000) = 4 clicks
+    60 (0110 0000) = 5 clicks
+    70 (0111 0000) = 6 clicks
+    80 (1000 0000) = 7 clicks, full  
 
-(byte 1) climate fan speed
-0000 0000 (off)
-0010 0000 (low, 1 click)
-0011 0000 (2 clicks)
-0100 0000 (3 clicks)
-0101 0000 (4 clicks)
-0110 0000 (5 clicks)
-0111 0000 (6 clicks)
-1000 0000 (7 clicks, full)
+  Byte 7
+    37 (0011 0111) = Default
+    36 (0011 0110) = When lights on OR brights on. Sometimes when rear wiper fluid. Pulse between 36 and 37 when in reverse. or when hazards on. different pulse speed..or when butt heaters on highish. This seems like a digital field that pulses based on things. Maybe it's sending a message?
 
-433 - ???
-  (byte 1)
-  0000 0000 (no lights)
-  0000 0001 (lights on in any fashion)
+433 - Random things
+  Byte 1 - Generic light info
+    00 (0000 0000) = No lights)
+    01 (0000 0001) = Lights on in any fashion)
 
-  Byte 5
-  0000 0000 (no handbrake)
-  0000 0001 (handbrake)
-  0000 0010 (reverse)
-  0000 1000 (blower fan on)
+  Byte 5 - Handbrake, reverse, climate fan
+    00 (0000 0000) = No handbrake)
+    01 (0000 0001) = Handbrake)
+    02 (0000 0010) = Reverse)
+    08 (0000 1000) = Blower fan on)
 
 461 - Seat belts; Passenger detection
   Byte 7 - Seat belts; Passenger detection
-    01 (0000 0001) - No front passenger
-    02 (0000 0010) - Front passenger present (enough for airbags at least)
-    00 (0000 0000) - No seat belts
-    20 (0010 0000) - Driver seatbelt on
-    40 (0100 0000) - Front passenger seatbelt on
+    01 (0000 0001) = No front passenger
+    02 (0000 0010) = Front passenger present (enough for airbags at least)
+    00 (0000 0000) = No seat belts
+    20 (0010 0000) = Driver seatbelt on
+    40 (0100 0000) = Front passenger seatbelt on
 
 4B0 - ???
 
