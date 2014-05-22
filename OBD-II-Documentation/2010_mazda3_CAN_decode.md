@@ -15,8 +15,8 @@ file://localhost/Users/jjrice/Desktop/mazdatechinfo/manual/books/i3w09/html/id09
 ##### 082 - Steering wheel position
 ```  
   Byte 1/2 - Seems to be related to the electronic steering assist motor. When you hear it whirring, these values appear. When it stops, these go to 0000.
-  ```
-  ```
+```
+```
   Byte 3/4 - Steering wheel position1 (slightly off from bytes 5/6. Maybe there are 2 sensors?)
     (See bytes 5/6 for more info)
     Max CW rotation is ~530 deg; Max CCW rotation is ~ -530 deg
@@ -29,7 +29,8 @@ file://localhost/Users/jjrice/Desktop/mazdatechinfo/manual/books/i3w09/html/id09
       Decimal          : 60096      .... 65535/0 ....5180
       10ths of a degree: -5440      .... 0       ....5180
       Degrees          : -544       .... 0       ....518      
-    ```
+```
+```
   Byte 5/6 - Steering wheel position2 (slightly off from bytes 3/4. Maybe there are 2 sensors?)
     Steering wheel position is a 2 byte Big Endian value expressed in 10ths of a degree.
     Top dead center (TDC) is 0 (00 00)
@@ -45,10 +46,12 @@ file://localhost/Users/jjrice/Desktop/mazdatechinfo/manual/books/i3w09/html/id09
       Decimal          : 60216      .... 65535/0 ....5300
       10ths of a degree: -5320      .... 0       ....5300
       Degrees          : -532       .... 0       ....530
-    
+```
+```
   Byte 7 - Always FC
     FC = ??
   Byte 8 - Counter (rolls around so you know the sequence of messages. First digit can be different when you start the car different times. Second digit goes 0,1,2..F,0,1..F...)
+```
 
 165 - Engine speed, accel pedal
   Byte 4 - Accel pedal (2 discrete vals). Useful to see if the pedal is activated, but when you don't care it's exact value.
