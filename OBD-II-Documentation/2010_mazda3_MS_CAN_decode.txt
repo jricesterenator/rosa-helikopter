@@ -16,15 +16,74 @@ Info Below is in this format:
     5A (0101 1010) - 90 degrees
   (JRTODO: many more. investigate)
 
-050 - Clutch
-  Byte 5 - Clutch in/out
-    01 (0000 0001) - Out
-    02 (0000 0010) - In
+28F - Radio Info
+  Byte 1 - Generic Station Indicator
+    D0 (1101 0000) - FM1
+    C0 (1100 0000) - FM2, AM, CD
+  Byte 4 - Action performed indicator
+    01 (0000 0001) - Default (no action) state
+    81 (1000 0001) - When vol up/down occurs, change song button, preset button, etc
+  Byte 5 - More generic station indicator
+    00 (0000 0000) - SAT1 loading; BT playing/paused
+    20 (0010 0000) - AM; CD mode, CD paused; SAT1 when loaded; SAT2; SAT3
+    24 (0010 0100) - FM
+    38 (0011 1000) - CD playing
+    
+2F5 - Satellite Info
+  Default, sat off: 2F5 00 FF FF 00 7F FF 3F FF
+  (JRTODO: Unclear, clarify)
+  bytes 5-8, station ID
+  when change station, 1-4 goes to 7f ff 3f ff 
+  when loaded becomes 01 00 80 00 00 for a sec then 01 01 81 00 00
+  Byte 8 - ??
+    when on byte 8 goes to 10, then 18. then more stuff comes
+  (/JRTODO)
+    
+39E - ??
+  Byte 8 - Dash night mode button
+    04 (0000 0100) - Night mode
+    0C (0000 1100) - Day Mode
+    
+290 - Words on the audio display? Decode..
+  Ex: flashing between (call 888 AND 539 SIRI)
+      290 C0 20 20 35 33 39 20 53 
+      290 C0 20 20 43 41 4C 4C 20 
+  Ex: "FM1:ch3   96.1"
+      290 C0 46 4D 31 63 68 33 20 
+    
+291 - An extension of 290?
+Ex:
+CALL 888, 539 SIRI
+290 C0 20 20 35 33 39 20 53 
+291 87 49 52 49 20 20 00 00 
 
-082 - Steering wheel position
-  Byte 1/2 - Seems to be related to the electronic steering assist motor. When you hear it whirring, these values appear. When it stops, these go to 0000.
-  Byte 3/4 - Steering wheel position1 (slightly off from bytes 5/6. Maybe there are 2 sensors?)
-    (See bytes 5/6 for more info)
-    Max CW rotation is ~530 deg; Max CCW rotation is ~ -530 deg
-    Example:
-      082 5A FC FC EB EA C0 00 00 (Chock left)
+290 C0 20 20 43 41 4C 4C 20 
+291 87 38 38 38 20 20 00 00 
+
+290 C0 20 20 43 41 4C 4C 20 
+
+291 87 38 38 38 20 20 00 00 
+290 C0 20 20 43 41 4C 4C 20 
+
+291 87 38 38 38 20 20 00 00 
+290 C0 20 20 43 41 4C 4C 20 
+291 87 38 38 38 20 20 00 00 
+290 C0 20 20 43 41 4C 4C 20 
+291 87 38 38 38 20 20 00 00 
+290 C0 20 20 43 41 4C 4C 20 
+291 87 38 38 38 20 20 00 00 
+290 C0 20 20 43 41 4C 4C 20 
+291 87 38 38 38 20 20 00 00 
+290 C0 20 20 35 33 39 20 53 
+291 87 49 52 49 20 20 00 00 
+290 C0 20 20 35 33 39 20 53 
+291 87 49 52 49 20 20 00 00 
+290 C0 20 20 35 33 39 20 53 
+291 87 49 52 49 20 20 00 00 
+290 C0 20 20 35 33 39 20 53 
+291 87 49 52 49 20 20 00 00 
+290 C0 20 20 35 33 39 20 53 
+291 87 49 52 49 20 20 00 00 
+290 C0 20 20 35 33 39 20 53 
+291 87 49 52 49 20 20 00 00 
+290 C0 20 20 43 41 4C 4C 20 
