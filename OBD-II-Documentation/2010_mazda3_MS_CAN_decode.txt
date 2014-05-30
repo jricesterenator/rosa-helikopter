@@ -1,0 +1,30 @@
+Info Below is in this format:
+<Sender ID> - General description of all data within
+  <Msg Byte> - Purpose of byte
+    <Decimal value for just this item> (<Corresponding Binary. This is what matters.>) - Value description
+
+
+2A0 - Climate
+  Byte 4 - Driver-side temp in degrees F
+    AA (1010 1010) - Off
+    4B (0100 1011) - 75 degrees
+    5A (0101 1010) - 90 degrees
+  Byte 5 - Blower speed
+  Byte 7 - Passenger-side temp in degrees F
+    AA (1010 1010) - Off
+    4B (0100 1011) - 75 degrees
+    5A (0101 1010) - 90 degrees
+  (JRTODO: many more. investigate)
+
+050 - Clutch
+  Byte 5 - Clutch in/out
+    01 (0000 0001) - Out
+    02 (0000 0010) - In
+
+082 - Steering wheel position
+  Byte 1/2 - Seems to be related to the electronic steering assist motor. When you hear it whirring, these values appear. When it stops, these go to 0000.
+  Byte 3/4 - Steering wheel position1 (slightly off from bytes 5/6. Maybe there are 2 sensors?)
+    (See bytes 5/6 for more info)
+    Max CW rotation is ~530 deg; Max CCW rotation is ~ -530 deg
+    Example:
+      082 5A FC FC EB EA C0 00 00 (Chock left)
