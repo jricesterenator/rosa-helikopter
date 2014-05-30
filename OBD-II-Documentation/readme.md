@@ -28,7 +28,6 @@ mx_protocol_commands.pdf
 ------------------------
 Good list of the different busses vehicles can support. Use this information to switch between HS and MS CAN busses.
 
-mynotes.rtf
------------
-All my notes about decoding the 2010 Mazda 3 high speed and medium speed CAN bus
-messages.
+2010_mazda3_CAN_decode.txt
+--------------------------
+All my notes about decoding the 2010 Mazda 3 high speed and medium speed CAN bus messages.
